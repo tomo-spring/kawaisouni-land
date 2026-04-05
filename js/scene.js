@@ -27,13 +27,13 @@ Game.pixelartconImage = new Image();
 Game.pixelartconImage.src = "assets/pixelartcon.png";
 
 Game.chara1Image = new Image();
-Game.chara1Image.src = "assets/chara1.png";
+Game.chara1Image.src = "assets/chara-1.png";
 
 Game.baerImage = new Image();
-Game.baerImage.src = "assets/baer.png";
+Game.baerImage.src = "assets/bear.png";
 
 Game.gateImage = new Image();
-Game.gateImage.src = "assets/gate-image.png";
+Game.gateImage.src = "assets/gate.png";
 Game.gateBitmap = null;
 Game.gateImage.onload = function() {
   createImageBitmap(Game.gateImage, { imageOrientation: "none" }).then(function(bmp) {
@@ -48,10 +48,10 @@ Game.characterImage = new Image();
 Game.characterImage.src = "assets/character.png";
 
 Game.runbaThumbnail = new Image();
-Game.runbaThumbnail.src = "assets/npochamurunba-thumbnail.png";
+Game.runbaThumbnail.src = "assets/npochamurunba-thumb.png";
 
 Game.hotelThumbnail = new Image();
-Game.hotelThumbnail.src = "assets/hotel-dangerous-thumbnail.png";
+Game.hotelThumbnail.src = "assets/hotel-dangerous-thumb.png";
 
 Game.OFFSET_X = 160;
 Game.OFFSET_Y = -80;

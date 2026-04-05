@@ -69,16 +69,18 @@
     "sad-run": {
       title: "大股の社員.exe",
       subtitle: "～ホテルダンゲロウスの大股の社員で出社しよう～",
-      thumb: "assets/hotel-dangerous-thumbnail.png",
-      thumb2: "assets/hotel-dangerous-thumbnail2.png",
+      thumb: "assets/hotel-dangerous-thumb.png",
+      thumb2: "assets/hotel-dangerous-thumb-2.png",
       desc: "いつも有給をとっているくせに、\n今日はあの大股の社員が出社するみたい...！\n小股のアルバイトの女の子を踏まないようにがんばって！",
+      url: "hotel-dangerous/index.html"
     },
     "train": {
       title: "んぽちゃむルンバ.exe",
       subtitle: "～んぽちゃむをルンバで連れて行こう～",
-      thumb: "assets/npochamurunba-thumbnail.png",
-      thumb2: "assets/npochamurunba-thumbnail2.png",
-      desc: "んぽちゃむったら旅行なのにまだ部屋にいるみたい！\nルンバで引きずり出してきみまろの元へ連れて行こう！\nマカロンに近づくと食べちゃうから気をつけて...！"
+      thumb: "assets/npochamurunba-thumb.png",
+      thumb2: "assets/npochamurunba-thumb-2.png",
+      desc: "んぽちゃむったら旅行なのにまだ部屋にいるみたい！\nルンバで引きずり出してきみまろの元へ連れて行こう！\nマカロンに近づくと食べちゃうから気をつけて...！",
+      url: "npochamu-runba/index.html"
     }
   };
 
@@ -120,6 +122,7 @@
         startIdleNoise();
       };
     }
+    Game._currentPopupId = id;
     popupOverlay.classList.add("active");
   }
 
@@ -241,7 +244,14 @@
     Game.selectedCabinet = null;
   }
 
-  popupClose.addEventListener("click", hidePopup);
+  popupClose.addEventListener("click", function() {
+    var data = popupData[Game._currentPopupId];
+    if (data && data.url) {
+      window.location.href = data.url;
+    } else {
+      hidePopup();
+    }
+  });
   document.getElementById("popup-cancel").addEventListener("click", hidePopup);
   document.getElementById("popup-header-close").addEventListener("click", hidePopup);
   popupOverlay.addEventListener("click", function(event) {
@@ -292,9 +302,9 @@
 
   // UFO GIFオーバーレイの位置同期 & ホバーで再生制御
   var ufoOverlayData = [
-    { still: "assets/ufo1.gif", gif: "assets/ufo1.gif", end: null },
-    { still: "assets/ufo2.png", gif: "assets/ufo2.gif", end: "assets/ufo2-end.gif" },
-    { still: "assets/ufo1.gif", gif: "assets/ufo1.gif", end: null }
+    { still: "assets/ufo-1.gif", gif: "assets/ufo-1.gif", end: null },
+    { still: "assets/ufo-2.png", gif: "assets/ufo-2.gif", end: "assets/ufo-2-end.gif" },
+    { still: "assets/ufo-1.gif", gif: "assets/ufo-1.gif", end: null }
   ];
   var ufoOverlays = [];
   for (var i = 0; i < Game.ufoCatchers.length; i++) {

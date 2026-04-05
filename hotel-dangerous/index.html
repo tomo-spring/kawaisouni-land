@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>ホテルダンゲロウス | 大股チャレンジ</title>
+    <style>
+      :root {
+        color-scheme: only light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #10131e;
+        font-family:
+          Impact, Haettenschweiler, "Arial Black", "Hiragino Kaku Gothic ProN",
+          "Yu Gothic", sans-serif;
+      }
+
+      body {
+        position: relative;
+      }
+
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        color: #000000;
+      }
+
+      .timer {
+        position: absolute;
+        top: 28px;
+        left: 32px;
+        margin: 0;
+        font-size: 3.5rem;
+        line-height: 0.92;
+        letter-spacing: 0.04em;
+      }
+
+      .controls {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 1.4rem;
+        font-weight: 900;
+        color: #555;
+      }
+
+      .surrender-btn {
+        position: absolute;
+        top: 28px;
+        left: 300px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 3px solid #991b1b;
+        background: #b91c1c;
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.75rem;
+        font-weight: 900;
+        cursor: pointer;
+        pointer-events: auto;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+        transition: transform 0.1s, box-shadow 0.1s;
+        line-height: 1.1;
+      }
+
+      .surrender-btn:active {
+        transform: scale(0.93);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .controls p {
+        display: flex;
+        align-items: center;
+        gap: 0.4em;
+        margin: 0;
+      }
+
+      .controls kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.6em;
+        height: 1.6em;
+        background: #fff;
+        border: 2px solid #aaa;
+        border-bottom: 4px solid #999;
+        border-radius: 6px;
+        color: #333;
+        font-family: inherit;
+        font-size: 1em;
+        font-weight: 900;
+        text-shadow: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="end-img-overlay" style="pointer-events:none;opacity:0;transition:opacity 4s ease;">
+      <div style="position:fixed;right:16vw;bottom:8vh;display:flex;flex-direction:column;align-items:center;z-index:9;">
+        <img src="./assets/player-body-end.png" alt=""
+          style="height:55vh;object-fit:contain;z-index:10;margin-bottom:-4vh;
+                 filter:saturate(1.2) brightness(1.05) drop-shadow(0 0 30px rgba(0,0,0,0.5));" />
+        <div style="display:flex;gap:0;margin-left:8vw;margin-top:-2vh;">
+          <img src="./assets/player-leg-rear.png" alt=""
+            style="height:38vh;object-fit:contain;margin-right:-7vh;
+                   filter:saturate(1.2) brightness(1.05) drop-shadow(0 0 20px rgba(0,0,0,0.4));" />
+          <img src="./assets/player-leg-front.png" alt=""
+            style="height:38vh;object-fit:contain;margin-left:-7vh;
+                   filter:saturate(1.2) brightness(1.05) drop-shadow(0 0 20px rgba(0,0,0,0.4));" />
+        </div>
+      </div>
+    </div>
+    <div class="hud">
+      <p class="timer" id="timer">00:00.000</p>
+      <button class="surrender-btn" id="surrender-btn">降参</button>
+      <div class="controls" aria-hidden="true">
+        <p><kbd>Q</kbd> 後ろの足を前へ</p>
+        <p><kbd>W</kbd> 後ろの足を後ろへ</p>
+        <p><kbd>O</kbd> 前の足を後ろへ</p>
+        <p><kbd>P</kbd> 前の足を前へ</p>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
+    <script>
+const { Engine, Bodies, Body, Composite, Constraint, Events } = window.Matter;
+
+// === utils.js ===
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function normalizeAngle(angle) {
+  return ((angle + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+}
+
+function roundRectPath(context, x, y, width, height, radius) {
+  context.beginPath();
+  context.roundRect(x, y, width, height, radius);
+}
+
+function formatTimer(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = Math.floor(totalSeconds % 60)
+    .toString()
+    .padStart(2, "0");
+  const millis = Math.floor((totalSeconds * 1000) % 1000)
+    .toString()
+    .padStart(3, "0");
+  return `${minutes}:${seconds}.${millis}`;
+}
+
+function isDrawableReady(image) {
+  if (!image) {
+    return false;
+  }
+  return typeof image.complete === "boolean" ? image.complete : true;
+}
+
+// === audio.js ===
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function resumeAudio() {
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+
+function sfx(type) {
+  resumeAudio();
+  const now = audioCtx.currentTime;
+
+  if (type === "footstep") {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(80 + Math.random() * 40, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.08);
+    filter.type = "lowpass";
+    filter.frequency.value = 300;
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.connect(filter).connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
+
+  if (type === "start") {
+    [260, 330, 392].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "square";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * 0.08);
+      gain.gain.linearRampToValueAtTime(0.12, now + i * 0.08 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.15);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.15);
+    });
+  }
+
+  if (type === "hit") {
+    const bufferSize = audioCtx.sampleRate * 0.15;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+    }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 600;
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    noise.connect(filter).connect(gain).connect(audioCtx.destination);
+    noise.start(now);
+  }
+
+  if (type === "lose") {
+    [330, 280, 220, 165].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * 0.18);
+      gain.gain.linearRampToValueAtTime(0.1, now + i * 0.18 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.18 + 0.3);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + i * 0.18);
+      osc.stop(now + i * 0.18 + 0.3);
+    });
+  }
+
+  if (type === "win") {
+    const melody = [523, 659, 784, 1047];
+    melody.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "square";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * 0.12);
+      gain.gain.linearRampToValueAtTime(0.1, now + i * 0.12 + 0.02);
+      gain.gain.setValueAtTime(0.1, now + i * 0.12 + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.25);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + i * 0.12);
+      osc.stop(now + i * 0.12 + 0.25);
+    });
+    // Final chord
+    [523, 659, 784, 1047].forEach((freq) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + 0.55);
+      gain.gain.linearRampToValueAtTime(0.06, now + 0.6);
+      gain.gain.setValueAtTime(0.06, now + 1.0);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now + 0.55);
+      osc.stop(now + 1.8);
+    });
+  }
+
+  if (type === "retry") {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  }
+}
+
+// === assets.js ===
+/*
+ * 素材を差し替えるときは src に相対パスを入れてください。
+ * 剛体の中心基準で描画するので、anchorX/anchorY と drawWidth/drawHeight で
+ * 見た目の合わせ込みを行います。必要なら scale / offsetX / offsetY も調整してください。
+ */
+const ASSETS = {
+  background: { src: "./assets/background.png" },
+  torso: {
+    src: "./assets/player-body.png",
+    anchorX: 0.39,
+    anchorY: 0.8,
+    scale: 1,
+    offsetX: 10,
+    offsetY: 28,
+    drawHeight: 360,
+    fit: "height",
+    trimAlpha: true,
+    flipX: true,
+  },
+  head: { src: null, anchorX: 0.5, anchorY: 0.5, scale: 1 },
+  leg: { src: null, anchorX: 0.5, anchorY: 0.5, scale: 1 },
+  legRear: {
+    src: "./assets/player-leg-rear.png",
+    anchorX: 0.5,
+    anchorY: 0,
+    scale: 1,
+    offsetY: -152,
+    drawHeight: 304,
+    fit: "height",
+    trimAlpha: true,
+    flipX: true,
+  },
+  legFront: {
+    src: "./assets/player-leg-front.png",
+    anchorX: 0.5,
+    anchorY: 0,
+    scale: 1,
+    offsetY: -152,
+    drawHeight: 304,
+    fit: "height",
+    trimAlpha: true,
+    flipX: true,
+  },
+  thigh: { src: null, anchorX: 0.5, anchorY: 0.5, scale: 1 },
+  shin: { src: null, anchorX: 0.5, anchorY: 0.5, scale: 1 },
+  foot: { src: null, anchorX: 0.5, anchorY: 0.5, scale: 1 },
+  enemy: { src: "./assets/moribito-1.png", anchorX: 0.5, anchorY: 1, scale: 1.7 },
+  goal: { src: "./assets/goal.png", anchorX: 0.5, anchorY: 1, scale: 1.5, offsetY: 20 },
+  ground: { src: null },
+  playerBodyEnd: { src: "./assets/player-body-end.png" },
+};
+
+function removeBrightEdgeBackdrop(image) {
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const surface = document.createElement("canvas");
+  surface.width = width;
+  surface.height = height;
+  const surfaceCtx = surface.getContext("2d", { willReadFrequently: true });
+  surfaceCtx.drawImage(image, 0, 0);
+
+  const imageData = surfaceCtx.getImageData(0, 0, width, height);
+  const { data } = imageData;
+  const visited = new Uint8Array(width * height);
+  const stack = [];
+
+  function push(x, y) {
+    if (x < 0 || y < 0 || x >= width || y >= height) {
+      return;
+    }
+    const index = y * width + x;
+    if (visited[index]) {
+      return;
+    }
+    visited[index] = 1;
+    stack.push(x, y);
+  }
+
+  function isBackdrop(pixelIndex) {
+    const alpha = data[pixelIndex + 3];
+    if (alpha === 0) {
+      return true;
+    }
+    const red = data[pixelIndex];
+    const green = data[pixelIndex + 1];
+    const blue = data[pixelIndex + 2];
+    const min = Math.min(red, green, blue);
+    const max = Math.max(red, green, blue);
+    return min >= 224 && max - min <= 24;
+  }
+
+  for (let x = 0; x < width; x += 1) {
+    push(x, 0);
+    push(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    push(0, y);
+    push(width - 1, y);
+  }
+
+  while (stack.length) {
+    const y = stack.pop();
+    const x = stack.pop();
+    const pixelOffset = (y * width + x) * 4;
+    if (!isBackdrop(pixelOffset)) {
+      continue;
+    }
+    data[pixelOffset + 3] = 0;
+    push(x + 1, y);
+    push(x - 1, y);
+    push(x, y + 1);
+    push(x, y - 1);
+  }
+
+  surfaceCtx.putImageData(imageData, 0, 0);
+  return surface;
+}
+
+function trimTransparentBounds(image) {
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const surface = document.createElement("canvas");
+  surface.width = width;
+  surface.height = height;
+  const surfaceCtx = surface.getContext("2d", { willReadFrequently: true });
+  surfaceCtx.drawImage(image, 0, 0);
+
+  const imageData = surfaceCtx.getImageData(0, 0, width, height);
+  const { data } = imageData;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const pixelOffset = (y * width + x) * 4;
+      if (data[pixelOffset + 3] === 0) {
+        continue;
+      }
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return surface;
+  }
+
+  const trimmed = document.createElement("canvas");
+  trimmed.width = maxX - minX + 1;
+  trimmed.height = maxY - minY + 1;
+  const trimmedCtx = trimmed.getContext("2d");
+  trimmedCtx.drawImage(
+    surface,
+    minX,
+    minY,
+    trimmed.width,
+    trimmed.height,
+    0,
+    0,
+    trimmed.width,
+    trimmed.height
+  );
+  return trimmed;
+}
+
+function loadImages(assetMap) {
+  const images = {};
+  for (const [key, config] of Object.entries(assetMap)) {
+    if (!config.src) {
+      continue;
+    }
+    const image = new Image();
+    if (config.removeBackground || config.trimAlpha) {
+      image.addEventListener(
+        "load",
+        () => {
+          try {
+            let processed = image;
+            if (config.removeBackground) {
+              processed = removeBrightEdgeBackdrop(processed);
+            }
+            if (config.trimAlpha) {
+              processed = trimTransparentBounds(processed);
+            }
+            images[key] = processed;
+          } catch (e) {
+            // file:// protocol causes canvas taint — fall back to original image
+            images[key] = image;
+          }
+        },
+        { once: true }
+      );
+    }
+    image.src = config.src;
+    images[key] = image;
+  }
+  return images;
+}
+
+// Enemy animation frames (moribito-1 ~ moribito-5, ping-pong loop)
+const enemyFrameImages = [1, 2, 3, 4, 5].map((i) => {
+  const img = new Image();
+  img.src = `./assets/moribito-${i}.png`;
+  return img;
+});
+
+// 1→2→3→4→5→4→3→2→ (ping-pong loop)
+const enemyFrames = [0, 1, 2, 3, 4, 3, 2, 1].map((i) => enemyFrameImages[i]);
+const ENEMY_FRAME_INTERVAL = 1 / 10; // 10 FPS
+
+const loadedImages = loadImages(ASSETS);
+
+// === state.js ===
+const terrainBumps = [];
+
+const enemyTemplates = [
+  { radius: 20, patrolSpeed: 30 },
+];
+
+const scene = {
+  width: 1400,
+  goalX: 920,
+  enemies: [],
+  clouds: [
+    { x: 220, y: 132, radius: 82, stretch: 1.8 },
+    { x: 760, y: 182, radius: 64, stretch: 1.5 },
+    { x: 1420, y: 146, radius: 88, stretch: 2.1 },
+    { x: 2150, y: 120, radius: 72, stretch: 1.7 },
+    { x: 3040, y: 198, radius: 90, stretch: 1.95 },
+  ],
+};
+
+const state = {
+  mode: "ready",
+  timer: 0,
+  worldTime: 0,
+  cameraX: 0,
+  windTime: 0,
+  windForce: 0,
+  surrendered: false,
+};
+
+const viewport = {
+  width: window.innerWidth,
+  height: window.innerHeight,
+  dpr: Math.min(window.devicePixelRatio || 1, 2),
+};
+
+const keys = Object.create(null);
+
+const game = {
+  engine: null,
+  player: null,
+  lastFrame: 0,
+};
+
+const legGroundState = [false, false];
+
+function groundBase() {
+  return viewport.height - 72;
+}
+
+function groundHeightAt(x) {
+  let y = groundBase();
+  for (const bump of terrainBumps) {
+    const halfW = bump.width * 0.5;
+    const dist = Math.abs(x - bump.x);
+    if (dist < halfW) {
+      const t = 1 - dist / halfW;
+      y -= bump.height * t * t * (3 - 2 * t);
+    }
+  }
+  return y;
+}
+
+function configureCourse() {
+  scene.goalX = viewport.width - 150;
+  scene.width = Math.max(scene.goalX + 260, viewport.width + 140);
+}
+
+// === terrain.js ===
+
+function createTerrainBodies() {
+  const terrainBodies = [];
+  let previousX = -160;
+  let previousY = groundHeightAt(0);
+
+  for (let x = 0; x <= scene.width + 180; x += 68) {
+    const y = groundHeightAt(x);
+    const centerX = (previousX + x) * 0.5;
+    const centerY = (previousY + y) * 0.5;
+    const length = Math.hypot(x - previousX, y - previousY);
+    const angle = Math.atan2(y - previousY, x - previousX);
+
+    terrainBodies.push(
+      Bodies.rectangle(centerX, centerY + 20, length + 8, 40, {
+        isStatic: true,
+        angle,
+        label: "ground",
+        friction: 1.3,
+        frictionStatic: 2.8,
+        render: { visible: false },
+      })
+    );
+
+    previousX = x;
+    previousY = y;
+  }
+
+  terrainBodies.push(
+    Bodies.rectangle(scene.width * 0.5, viewport.height + 180, scene.width + 900, 280, {
+      isStatic: true,
+      label: "ground",
+      render: { visible: false },
+    }),
+    Bodies.rectangle(-120, viewport.height * 0.5, 240, viewport.height * 2, {
+      isStatic: true,
+      label: "wall",
+      render: { visible: false },
+    }),
+    Bodies.rectangle(scene.width + 120, viewport.height * 0.5, 240, viewport.height * 2, {
+      isStatic: true,
+      label: "wall",
+      render: { visible: false },
+    })
+  );
+
+  return terrainBodies;
+}
+
+// === enemies.js ===
+
+function createEnemies(engine) {
+  const minX = 310;
+  const maxX = Math.max(minX + 240, scene.goalX - 170);
+  const patrolMinX = minX + (maxX - minX) * 0.25;
+  const patrolMaxX = minX + (maxX - minX) * 0.75;
+
+  scene.enemies = enemyTemplates.map((entry, index) => {
+    const x = patrolMaxX;
+    const collisionRadius = entry.radius * 1.7;
+    const body = Bodies.circle(x, groundHeightAt(x) - collisionRadius, collisionRadius, {
+      isStatic: true,
+      isSensor: true,
+      label: `enemy/${index}`,
+      render: { visible: false },
+    });
+
+    Composite.add(engine.world, body);
+
+    return {
+      ...entry,
+      x,
+      body,
+      collapsed: false,
+      patrolMinX,
+      patrolMaxX,
+      patrolDir: -1,
+      flip: false,
+    };
+  });
+}
+
+function collapseEnemy(enemy, playerBody) {
+  if (enemy.collapsed) {
+    return;
+  }
+
+  enemy.collapsed = true;
+  // Note: the body is removed from the world by the caller or here
+  // We keep it simple and just mark as collapsed
+  const vel = playerBody.velocity;
+  const speed = Math.hypot(vel.x, vel.y);
+  const kickStrength = Math.max(speed * 80, 300);
+  const dx = enemy.body.position.x - playerBody.position.x;
+  const dist = Math.abs(dx) || 1;
+
+  enemy.flyX = enemy.body.position.x;
+  enemy.flyY = enemy.body.position.y;
+  enemy.flyVx = (dx / dist) * kickStrength * 0.5 + vel.x * 20;
+  enemy.flyVy = -kickStrength;
+  enemy.flyRotation = 0;
+  enemy.flyAngularVel = (Math.random() - 0.5) * 0.15;
+  enemy.flewAt = state.worldTime;
+}
+
+function updateFlyingEnemies(dtMs) {
+  const dt = dtMs / 1000;
+  const gravity = 800;
+  for (const enemy of scene.enemies) {
+    if (!enemy.collapsed || enemy.flyX === undefined) continue;
+    enemy.flyVy += gravity * dt;
+    enemy.flyX += enemy.flyVx * dt;
+    enemy.flyY += enemy.flyVy * dt;
+    enemy.flyRotation += enemy.flyAngularVel;
+  }
+}
+
+function updateEnemyPatrol(dtMs) {
+  const dt = dtMs / 1000;
+  for (const enemy of scene.enemies) {
+    if (enemy.collapsed || !enemy.patrolSpeed) continue;
+    const speed = enemy.patrolSpeed * enemy.patrolDir;
+    const newX = enemy.body.position.x + speed * dt;
+    if (newX >= enemy.patrolMaxX) {
+      enemy.patrolDir = -1;
+    } else if (newX <= enemy.patrolMinX) {
+      enemy.patrolDir = 1;
+    }
+    enemy.flip = enemy.patrolDir > 0;
+    const groundY = groundHeightAt(newX);
+    const collisionRadius = enemy.radius * 1.7;
+    Body.setPosition(enemy.body, { x: newX, y: groundY - collisionRadius });
+  }
+}
+
+// === player.js ===
+
+function markDrawable(body, key, width, height) {
+  body.plugin.draw = { key, width, height };
+  return body;
+}
+
+function createPlayer() {
+  const { engine } = game;
+  const collisionGroup = Body.nextGroup(true);
+  const baseX = 220;
+  const legWidth = 34;
+  const legHeight = 304;
+  const torsoWidth = 126;
+  const torsoHeight = 164;
+  const headRadius = 30;
+  const hipOffsetX = 26;
+  const legHalfHeight = legHeight * 0.5;
+  const leftFootX = baseX - hipOffsetX;
+  const rightFootX = baseX + hipOffsetX;
+  const leftFootY = groundHeightAt(leftFootX);
+  const rightFootY = groundHeightAt(rightFootX);
+  const torsoJointY = torsoHeight * 0.5 - torsoHeight / 5;
+  const legJointY = -legHalfHeight;
+  const torsoY = Math.min(leftFootY, rightFootY) - legHeight - torsoJointY;
+
+  const common = {
+    collisionFilter: { group: collisionGroup },
+    restitution: 0,
+  };
+
+  const torsoCore = Bodies.rectangle(baseX, torsoY, torsoWidth, torsoHeight, {
+    ...common,
+    label: "player/torso",
+    chamfer: { radius: 20 },
+    density: 0.0017,
+    inertia: Infinity,
+    frictionAir: 0.02,
+  });
+
+  const torso = markDrawable(
+    torsoCore,
+    "torso",
+    ASSETS.torso.drawWidth || torsoWidth,
+    ASSETS.torso.drawHeight || torsoHeight
+  );
+  Body.setInertia(torso, Infinity);
+  Body.setAngle(torso, 0);
+  Body.setAngularVelocity(torso, 0);
+
+  const leftLeg = markDrawable(
+    Bodies.rectangle(leftFootX, leftFootY - legHalfHeight, legWidth, legHeight, {
+      ...common,
+      label: "player/left-leg",
+      chamfer: { radius: 16 },
+      density: 0.00132,
+      friction: 1.55,
+      frictionStatic: 3.1,
+      frictionAir: 0.028,
+    }),
+    "legRear",
+    ASSETS.legRear.drawWidth || legWidth,
+    ASSETS.legRear.drawHeight || legHeight
+  );
+
+  const rightLeg = markDrawable(
+    Bodies.rectangle(rightFootX, rightFootY - legHalfHeight, legWidth, legHeight, {
+      ...common,
+      label: "player/right-leg",
+      chamfer: { radius: 16 },
+      density: 0.00132,
+      friction: 1.55,
+      frictionStatic: 3.1,
+      frictionAir: 0.028,
+    }),
+    "legFront",
+    ASSETS.legFront.drawWidth || legWidth,
+    ASSETS.legFront.drawHeight || legHeight
+  );
+
+  const constraints = [
+    Constraint.create({
+      bodyA: torso,
+      pointA: { x: -hipOffsetX, y: torsoJointY },
+      bodyB: leftLeg,
+      pointB: { x: 0, y: legJointY },
+      stiffness: 0.985,
+      damping: 0.2,
+      length: 0,
+    }),
+    Constraint.create({
+      bodyA: torso,
+      pointA: { x: hipOffsetX, y: torsoJointY },
+      bodyB: rightLeg,
+      pointB: { x: 0, y: legJointY },
+      stiffness: 0.985,
+      damping: 0.2,
+      length: 0,
+    }),
+  ];
+
+  Composite.add(engine.world, [
+    torso,
+    leftLeg,
+    rightLeg,
+    ...constraints,
+  ]);
+
+  return {
+    torso,
+    head: {
+      radius: headRadius,
+      localX: 0,
+      localY: -145,
+    },
+    bodies: [torso, leftLeg, rightLeg],
+    legs: [
+      {
+        side: "rear",
+        leg: leftLeg,
+        controlSign: 1,
+        motorAngle: 0,
+        idleAngle: 0,
+        unwrappedAngle: 0,
+        lastWrappedAngle: 0,
+        rotationSpeed: 0.052,
+      },
+      {
+        side: "front",
+        leg: rightLeg,
+        controlSign: -1,
+        motorAngle: 0,
+        idleAngle: 0,
+        unwrappedAngle: 0,
+        lastWrappedAngle: 0,
+        rotationSpeed: 0.052,
+      },
+    ],
+  };
+}
+
+function getLegTip(body) {
+  const halfHeight = body.plugin.draw.height * 0.5 - 4;
+  return {
+    x: body.position.x - Math.sin(body.angle) * halfHeight,
+    y: body.position.y + Math.cos(body.angle) * halfHeight,
+  };
+}
+
+function getHeadPose() {
+  const { player } = game;
+  const cos = Math.cos(player.torso.angle);
+  const sin = Math.sin(player.torso.angle);
+  const { localX, localY, radius } = player.head;
+  return {
+    x: player.torso.position.x + localX * cos - localY * sin,
+    y: player.torso.position.y + localX * sin + localY * cos,
+    angle: player.torso.angle,
+    radius,
+  };
+}
+
+function isLegGrounded(legBody) {
+  const tip = getLegTip(legBody);
+  const floor = groundHeightAt(tip.x);
+  return tip.y >= floor - 8 && Math.abs(legBody.velocity.y) < 3.2;
+}
+
+function applyRelativeAngleMotor(parent, child, currentAngle, targetAngle, stiffness, damping, maxDelta) {
+  const relativeVelocity = child.angularVelocity - parent.angularVelocity;
+  const correction = clamp(
+    (targetAngle - currentAngle) * stiffness - relativeVelocity * damping,
+    -maxDelta,
+    maxDelta
+  );
+
+  Body.setAngularVelocity(child, child.angularVelocity + correction);
+  if (Number.isFinite(parent.inertia)) {
+    Body.setAngularVelocity(parent, parent.angularVelocity - correction * 0.25);
+  }
+}
+
+function syncLegMotorState(leg, resetTarget = false) {
+  const { player } = game;
+  const wrappedAngle = normalizeAngle(leg.leg.angle - player.torso.angle);
+
+  if (!Number.isFinite(leg.unwrappedAngle)) {
+    leg.unwrappedAngle = wrappedAngle;
+    leg.lastWrappedAngle = wrappedAngle;
+    leg.motorAngle = wrappedAngle;
+    leg.idleAngle = wrappedAngle;
+    return;
+  }
+
+  leg.unwrappedAngle += normalizeAngle(wrappedAngle - leg.lastWrappedAngle);
+  leg.lastWrappedAngle = wrappedAngle;
+
+  if (resetTarget) {
+    leg.motorAngle = leg.unwrappedAngle;
+    leg.idleAngle = leg.unwrappedAngle;
+  }
+}
+
+function controlLeg(leg, input) {
+  const { player } = game;
+  syncLegMotorState(leg);
+  const grounded = isLegGrounded(leg.leg);
+  const active = Math.abs(input) > 0.05;
+  const motorBoost = grounded ? 1.04 : 0.9;
+
+  if (state.mode === "ready") {
+    leg.motorAngle += (leg.idleAngle - leg.motorAngle) * 0.18;
+  } else if (active) {
+    leg.motorAngle += input * leg.controlSign * leg.rotationSpeed;
+  }
+
+  if (active || state.mode === "ready") {
+    applyRelativeAngleMotor(
+      player.torso,
+      leg.leg,
+      leg.unwrappedAngle,
+      leg.motorAngle,
+      0.095 * motorBoost,
+      0.16,
+      0.08
+    );
+  }
+
+  if (state.mode === "playing" && active) {
+    const tip = getLegTip(leg.leg);
+    if (grounded) {
+      const driveForce = input * 0.00042;
+      Body.applyForce(leg.leg, tip, { x: driveForce, y: 0 });
+      Body.applyForce(player.torso, player.torso.position, {
+        x: -driveForce * 0.45,
+        y: 0,
+      });
+    } else {
+      Body.applyForce(leg.leg, tip, {
+        x: input * 0.0001,
+        y: -0.00006,
+      });
+    }
+  }
+}
+
+function controlPlayer() {
+  const { player } = game;
+  if (state.mode === "lost" || state.mode === "won") {
+    return;
+  }
+
+  const rearInput = keys.w ? 1 : keys.q ? -1 : 0;
+  const frontInput = keys.p ? 1 : keys.o ? -1 : 0;
+
+  if ((rearInput || frontInput) && state.mode === "ready") {
+    state.mode = "playing";
+    sfx("start");
+  }
+
+  // Footstep detection
+  for (let i = 0; i < player.legs.length; i++) {
+    const grounded = isLegGrounded(player.legs[i].leg);
+    if (grounded && !legGroundState[i] && state.mode === "playing") {
+      sfx("footstep");
+    }
+    legGroundState[i] = grounded;
+  }
+
+  for (const leg of player.legs) {
+    const input = leg.side === "rear" ? rearInput : frontInput;
+    controlLeg(leg, input);
+  }
+
+  Body.applyForce(player.torso, player.torso.position, {
+    x: state.windForce * 0.00024,
+    y: 0,
+  });
+}
+
+function lockTorsoRotation() {
+  const { player } = game;
+  Body.setAngle(player.torso, 0);
+  Body.setAngularVelocity(player.torso, 0);
+}
+
+function settleInitialPose() {
+  const { engine, player } = game;
+  for (let i = 0; i < 60; i += 1) {
+    Engine.update(engine, 1000 / 60);
+    lockTorsoRotation();
+  }
+
+  for (const leg of player.legs) {
+    leg.unwrappedAngle = NaN;
+    syncLegMotorState(leg, true);
+  }
+
+  for (const body of player.bodies) {
+    Body.setVelocity(body, { x: 0, y: 0 });
+    Body.setAngularVelocity(body, 0);
+  }
+  lockTorsoRotation();
+}
+
+// === render.js ===
+function createConfetti(count) {
+  const particles = [];
+  const colors = [
+    "#ff3e3e", "#ff9f1c", "#ffdc00", "#2ecc40",
+    "#0074d9", "#b10dc9", "#ff69b4", "#f012be",
+    "#fffa65", "#01ff70", "#7fdbff", "#ff851b",
+  ];
+  const shapes = ["rect", "circle", "triangle"];
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 200 + Math.random() * 600;
+    particles.push({
+      x: viewport.width / 2 + (Math.random() - 0.5) * 100,
+      y: viewport.height / 2 + (Math.random() - 0.5) * 100,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 300,
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 12,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      shape: shapes[Math.floor(Math.random() * shapes.length)],
+      size: 4 + Math.random() * 8,
+      life: 3 + Math.random() * 3,
+      born: 0,
+    });
+  }
+  return particles;
+}
+
+function updateConfetti(particles, dt) {
+  for (const p of particles) {
+    p.born += dt;
+    p.vy += 400 * dt;
+    p.vx *= 0.995;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.rotation += p.rotSpeed * dt;
+  }
+}
+
+function drawConfetti(ctx, particles) {
+  for (const p of particles) {
+    const fade = clamp(1 - p.born / p.life, 0, 1);
+    if (fade <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rotation);
+    ctx.fillStyle = p.color;
+    if (p.shape === "rect") {
+      ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+    } else if (p.shape === "circle") {
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(0, -p.size / 2);
+      ctx.lineTo(p.size / 2, p.size / 2);
+      ctx.lineTo(-p.size / 2, p.size / 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawBackground(ctx) {
+  const backgroundImage = loadedImages.background;
+  ctx.fillStyle = "#dff5ff";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+  if (isDrawableReady(backgroundImage)) {
+    const imgW = backgroundImage.naturalWidth || backgroundImage.width;
+    const imgH = backgroundImage.naturalHeight || backgroundImage.height;
+    const scale = viewport.width / imgW;
+    const dw = viewport.width;
+    const dh = imgH * scale;
+    const dy = viewport.height - dh;
+    ctx.drawImage(backgroundImage, 0, dy, dw, dh);
+  }
+}
+
+function drawGround(ctx) {
+  const startX = state.cameraX;
+  const endX = startX + viewport.width;
+  const step = 4;
+  const bottom = viewport.height;
+
+  ctx.fillStyle = "#B8956A";
+  ctx.beginPath();
+  ctx.moveTo(startX, bottom);
+  for (let x = startX; x <= endX; x += step) {
+    ctx.lineTo(x, groundHeightAt(x));
+  }
+  ctx.lineTo(endX, groundHeightAt(endX));
+  ctx.lineTo(endX, bottom);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = "#4A2E14";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(startX, groundHeightAt(startX));
+  for (let x = startX + step; x <= endX; x += step) {
+    ctx.lineTo(x, groundHeightAt(x));
+  }
+  ctx.lineTo(endX, groundHeightAt(endX));
+  ctx.stroke();
+}
+
+function drawGoal(ctx) {
+  const x = scene.goalX;
+  const baseY = groundHeightAt(x);
+  const goalImage = loadedImages.goal;
+
+  if (!isDrawableReady(goalImage)) return;
+
+  const width = 180 * (ASSETS.goal.scale || 1);
+  const height = 180 * (ASSETS.goal.scale || 1);
+  ctx.drawImage(
+    goalImage,
+    x - width * ASSETS.goal.anchorX + (ASSETS.goal.offsetX || 0),
+    baseY - height * ASSETS.goal.anchorY + (ASSETS.goal.offsetY || 0),
+    width,
+    height
+  );
+}
+
+function drawShadow(ctx, x, y, width, alpha) {
+  ctx.save();
+  ctx.fillStyle = `rgba(17, 33, 45, ${alpha})`;
+  ctx.beginPath();
+  ctx.ellipse(x, y, width, width * 0.24, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBodySprite(ctx, body, key) {
+  const image = loadedImages[key];
+  if (!isDrawableReady(image)) {
+    return false;
+  }
+
+  const config = ASSETS[key];
+  const drawInfo = body.plugin.draw;
+  const sourceWidth = image.naturalWidth || image.width || drawInfo.width || drawInfo.radius * 2;
+  const sourceHeight = image.naturalHeight || image.height || drawInfo.height || drawInfo.radius * 2;
+  let width = (config.drawWidth || drawInfo.width || drawInfo.radius * 2) * (config.scale || 1);
+  let height = (config.drawHeight || drawInfo.height || drawInfo.radius * 2) * (config.scale || 1);
+
+  if (config.fit === "height" && sourceWidth && sourceHeight) {
+    width = height * (sourceWidth / sourceHeight);
+  } else if (config.fit === "width" && sourceWidth && sourceHeight) {
+    height = width * (sourceHeight / sourceWidth);
+  }
+
+  const anchorX = config.flipX ? 1 - config.anchorX : config.anchorX;
+
+  ctx.save();
+  ctx.translate(body.position.x, body.position.y);
+  ctx.rotate(body.angle);
+  ctx.translate(config.offsetX || 0, config.offsetY || 0);
+  if (config.flipX) {
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(
+    image,
+    -width * anchorX,
+    -height * config.anchorY,
+    width,
+    height
+  );
+  ctx.restore();
+  return true;
+}
+
+function drawHead(ctx) {
+  const headPose = getHeadPose();
+  const image = loadedImages.head;
+
+  if (isDrawableReady(image)) {
+    const size = headPose.radius * 2 * (ASSETS.head.scale || 1.15);
+    ctx.save();
+    ctx.translate(
+      headPose.x + (ASSETS.head.offsetX || 0),
+      headPose.y + (ASSETS.head.offsetY || 0)
+    );
+    ctx.rotate(headPose.angle);
+    ctx.drawImage(
+      image,
+      -size * ASSETS.head.anchorX,
+      -size * ASSETS.head.anchorY,
+      size,
+      size
+    );
+    ctx.restore();
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(headPose.x, headPose.y);
+  ctx.rotate(headPose.angle);
+  ctx.fillStyle = "#f7d0ba";
+  ctx.strokeStyle = "#5b4740";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 26, 32, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#0b0f16";
+  ctx.beginPath();
+  ctx.moveTo(-20, -20);
+  ctx.quadraticCurveTo(8, -46, 30, -8);
+  ctx.lineTo(12, -6);
+  ctx.quadraticCurveTo(-2, -24, -20, -20);
+  ctx.fill();
+
+  ctx.fillStyle = "#1f2633";
+  ctx.beginPath();
+  ctx.arc(-8, -2, 3.6, 0, Math.PI * 2);
+  ctx.arc(8, -2, 3.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPlayer(ctx) {
+  const { player } = game;
+  const rearLeg = player.legs[0];
+  const frontLeg = player.legs[1];
+  const rearTip = getLegTip(rearLeg.leg);
+  const frontTip = getLegTip(frontLeg.leg);
+
+  drawShadow(ctx, rearTip.x, groundHeightAt(rearTip.x) + 4, 28, 0.16);
+  drawShadow(ctx, frontTip.x, groundHeightAt(frontTip.x) + 4, 28, 0.18);
+
+  drawBodySprite(ctx, rearLeg.leg, rearLeg.leg.plugin.draw.key);
+  drawBodySprite(ctx, frontLeg.leg, frontLeg.leg.plugin.draw.key);
+  drawBodySprite(ctx, player.torso, "torso");
+}
+
+function drawEnemy(ctx, enemy) {
+  const frameIndex = Math.floor(state.worldTime / ENEMY_FRAME_INTERVAL) % enemyFrames.length;
+  const image = enemyFrames[frameIndex];
+  const x = enemy.body.position.x;
+
+  if (!isDrawableReady(image)) return;
+
+  const imgW = image.naturalWidth || image.width;
+  const imgH = image.naturalHeight || image.height;
+  const aspect = imgW / imgH;
+  const h = enemy.radius * 2.8 * (ASSETS.enemy.scale || 1);
+  const w = h * aspect;
+  ctx.save();
+  if (enemy.collapsed) {
+    ctx.translate(enemy.flyX, enemy.flyY);
+    ctx.rotate(enemy.flyRotation || 0);
+    if (enemy.flip) ctx.scale(-1, 1);
+    ctx.drawImage(image, -w / 2, -h / 2, w, h);
+  } else {
+    const groundY = groundHeightAt(x);
+    if (enemy.flip) {
+      ctx.translate(x, 0);
+      ctx.scale(-1, 1);
+      ctx.translate(-x, 0);
+    }
+    ctx.drawImage(
+      image,
+      x - w * ASSETS.enemy.anchorX + (ASSETS.enemy.offsetX || 0),
+      groundY - h,
+      w,
+      h
+    );
+  }
+  ctx.restore();
+}
+
+function drawLoseScreen(ctx) {
+  const elapsed = state.worldTime - state.lostAt;
+
+  const blackAlpha = Math.min(elapsed / 1.2, 1);
+  ctx.save();
+  ctx.globalAlpha = blackAlpha;
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+  ctx.restore();
+
+  const cy = viewport.height / 2;
+  const leftX = viewport.width * 0.35;
+
+  const endOverlay = document.getElementById("end-img-overlay");
+  if (elapsed > 1.7) {
+    endOverlay.style.opacity = "1";
+  }
+
+  const msgAlpha = Math.min(Math.max((elapsed - 1.7) / 4.0, 0), 1);
+  if (msgAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = msgAlpha;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillStyle = "#cccccc";
+    ctx.font = `bold ${Math.floor(viewport.width * 0.022)}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+
+    if (state.surrendered) {
+      ctx.fillText("ホテルの出勤に遅刻してしまった…", leftX, cy - 30);
+
+      const subAlpha = Math.min(Math.max((elapsed - 3.2) / 4.0, 0), 1);
+      ctx.globalAlpha = subAlpha;
+      ctx.fillText("フロントに誰もいない…", leftX, cy + 20);
+
+      const dotsAlpha = Math.min(Math.max((elapsed - 5.2) / 4.0, 0), 1);
+      ctx.globalAlpha = dotsAlpha;
+      ctx.fillText("お客様が怒っている…", leftX, cy + 70);
+    } else {
+      ctx.fillText("あなたのせいで", leftX, cy - 30);
+
+      const subAlpha = Math.min(Math.max((elapsed - 3.2) / 4.0, 0), 1);
+      ctx.globalAlpha = subAlpha;
+      ctx.fillText("アルバイト社員の命が失われました", leftX, cy + 20);
+
+      const dotsAlpha = Math.min(Math.max((elapsed - 5.2) / 4.0, 0), 1);
+      ctx.globalAlpha = dotsAlpha;
+      ctx.fillText("彼女にも家族がいたのに...", leftX, cy + 70);
+    }
+
+    ctx.restore();
+  }
+
+  const retryFadeIn = Math.min(Math.max((elapsed - 7.0) / 3.0, 0), 1);
+  state.retryReady = retryFadeIn > 0;
+  if (retryFadeIn > 0) {
+    ctx.save();
+    const blink = retryFadeIn < 1 ? retryFadeIn : 0.3 + 0.3 * Math.sin(elapsed * 3);
+    ctx.globalAlpha = blink;
+    ctx.fillStyle = "#cccccc";
+    ctx.font = `22px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("スペースキーで最初に戻る", leftX, cy + 220);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = blink;
+    ctx.fillStyle = "#888888";
+    ctx.font = `18px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText("Escキーでトップに戻る", leftX, cy + 260);
+    ctx.restore();
+  }
+}
+
+function drawWinScreen(ctx) {
+  const elapsed = state.worldTime - state.wonAt;
+  const dt = (state.lastDelta || 16) / 1000;
+
+  if (state.winConfetti) updateConfetti(state.winConfetti, dt);
+
+  ctx.save();
+  if (state.winScreenShake > 0) {
+    state.winScreenShake = Math.max(0, state.winScreenShake - dt * 1.5);
+    const shakeAmt = state.winScreenShake * 15;
+    ctx.translate(
+      (Math.random() - 0.5) * shakeAmt,
+      (Math.random() - 0.5) * shakeAmt
+    );
+  }
+
+  if (elapsed < 0.5) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - elapsed / 0.5);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
+    ctx.restore();
+  }
+
+  const overlayAlpha = Math.min(elapsed / 1.5, 0.75);
+  ctx.save();
+  ctx.globalAlpha = overlayAlpha;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+  ctx.restore();
+
+  if (elapsed > 0.2 && elapsed < 4.0) {
+    const rayAlpha = Math.min((elapsed - 0.2) / 0.5, 1) * 0.15;
+    ctx.save();
+    ctx.globalAlpha = rayAlpha;
+    ctx.translate(viewport.width / 2, viewport.height / 2 - 30);
+    const rayCount = 12;
+    for (let i = 0; i < rayCount; i++) {
+      const angle = (i / rayCount) * Math.PI * 2 + elapsed * 0.3;
+      ctx.save();
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      const rayLen = viewport.width * 0.8;
+      ctx.lineTo(-30, rayLen);
+      ctx.lineTo(30, rayLen);
+      ctx.closePath();
+      ctx.fillStyle = "#ffd700";
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  if (state.winConfetti) {
+    drawConfetti(ctx, state.winConfetti);
+  }
+
+  const titleStart = 0.3;
+  const titleAlpha = Math.min(Math.max((elapsed - titleStart) / 0.4, 0), 1);
+  if (titleAlpha > 0) {
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const fontSize = Math.floor(viewport.width * 0.09);
+    ctx.font = `bold ${fontSize}px Impact, "Arial Black", sans-serif`;
+
+    const titleAge = elapsed - titleStart;
+    let scale = 1;
+    if (titleAge < 0.3) {
+      scale = 1.5 - 0.5 * (titleAge / 0.3);
+    } else if (titleAge < 0.5) {
+      scale = 1 + 0.05 * Math.sin((titleAge - 0.3) / 0.2 * Math.PI);
+    }
+
+    const cx = viewport.width / 2;
+    const cy = viewport.height / 2 - 70;
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+
+    ctx.globalAlpha = titleAlpha;
+    ctx.fillStyle = "#f0c040";
+    ctx.fillText("CLEAR!", 0, 0);
+
+    ctx.restore();
+  }
+
+  if (elapsed > 0.5 && elapsed < 5.0) {
+    ctx.save();
+    const sparkleCount = 8;
+    for (let i = 0; i < sparkleCount; i++) {
+      const t = elapsed * 2 + i * 1.3;
+      const sx = viewport.width / 2 + Math.sin(t * 1.7 + i) * viewport.width * 0.2;
+      const sy = viewport.height / 2 - 70 + Math.cos(t * 1.3 + i * 2) * 50;
+      const sparkleSize = (3 + Math.sin(t * 5) * 3) * (1 + Math.sin(elapsed * 3) * 0.3);
+      const sparkleAlpha = 0.5 + Math.sin(t * 4) * 0.5;
+      ctx.globalAlpha = sparkleAlpha;
+      ctx.fillStyle = "#fff";
+      ctx.shadowColor = "#ffd700";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      for (let j = 0; j < 4; j++) {
+        const angle = (j / 4) * Math.PI * 2 + elapsed * 3;
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + Math.cos(angle) * sparkleSize, sy + Math.sin(angle) * sparkleSize);
+        ctx.lineTo(sx + Math.cos(angle + 0.3) * sparkleSize * 0.3, sy + Math.sin(angle + 0.3) * sparkleSize * 0.3);
+      }
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  const recordAlpha = Math.min(Math.max((elapsed - 1.2) / 0.6, 0), 1);
+  if (recordAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = recordAlpha;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `bold ${Math.floor(viewport.width * 0.025)}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+    ctx.fillStyle = "#2a2a2a";
+    ctx.fillText(`記録: ${state.winRecord}`, viewport.width / 2, viewport.height / 2 + 20);
+    ctx.restore();
+  }
+
+  const retryAlpha = Math.min(Math.max((elapsed - 2.2) / 0.8, 0), 1);
+  state.retryReady = retryAlpha > 0;
+  if (retryAlpha > 0) {
+    ctx.save();
+    const pulse = 0.6 + Math.sin(elapsed * 3) * 0.15;
+    ctx.globalAlpha = retryAlpha * pulse;
+    ctx.fillStyle = "#666";
+    ctx.font = `22px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("スペースキーで最初に戻る", viewport.width / 2, viewport.height / 2 + 90);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = retryAlpha * pulse;
+    ctx.fillStyle = "#888";
+    ctx.font = `18px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Escキーでトップに戻る", viewport.width / 2, viewport.height / 2 + 125);
+    ctx.restore();
+  }
+
+  // End screen shake
+  ctx.restore();
+}
+
+function render(ctx, canvas, timerEl) {
+  ctx.clearRect(0, 0, viewport.width, viewport.height);
+  drawBackground(ctx);
+
+  ctx.save();
+  ctx.translate(-state.cameraX, 0);
+  for (const enemy of scene.enemies) {
+    if (!enemy.collapsed) {
+      drawShadow(ctx, enemy.body.position.x, groundHeightAt(enemy.body.position.x) + 3, enemy.radius * 1.25, 0.16);
+    }
+    drawEnemy(ctx, enemy);
+  }
+  drawPlayer(ctx);
+  drawGround(ctx);
+  drawGoal(ctx);
+  ctx.restore();
+
+  timerEl.textContent = formatTimer(state.timer);
+
+  const hudEl = document.querySelector(".hud");
+  hudEl.style.display = (state.mode === "won" || state.mode === "lost") ? "none" : "";
+
+  if (state.mode === "lost") {
+    drawLoseScreen(ctx);
+  }
+
+  if (state.mode === "won") {
+    drawWinScreen(ctx);
+  }
+}
+
+// === game.js ===
+
+function updateWind(dt) {
+  if (state.mode !== "playing") {
+    state.windForce *= 0.9;
+    return;
+  }
+
+  state.windTime += dt;
+  const base =
+    Math.sin(state.windTime * 0.7) * 0.18 +
+    Math.sin(state.windTime * 1.6 + 0.4) * 0.08;
+  const burst = Math.max(0, Math.sin(state.windTime * 0.22 - 0.5)) ** 5 * 0.55;
+  state.windForce = base + burst;
+}
+
+function lose() {
+  if (state.mode === "lost" || state.mode === "won") {
+    return;
+  }
+  state.mode = "lost";
+  state.lostAt = state.worldTime;
+  sfx("lose");
+}
+
+function surrender() {
+  if (state.mode !== "playing" && state.mode !== "ready") {
+    return;
+  }
+  state.surrendered = true;
+  state.mode = "lost";
+  state.lostAt = state.worldTime;
+  sfx("lose");
+}
+
+function win() {
+  if (state.mode === "lost" || state.mode === "won") {
+    return;
+  }
+  state.mode = "won";
+  state.wonAt = state.worldTime;
+  state.winRecord = formatTimer(state.timer);
+  sfx("win");
+  state.winConfetti = createConfetti(200);
+  state.winScreenShake = 1.0;
+}
+
+function handleCollisions(event) {
+  if (state.mode === "won") {
+    return;
+  }
+
+  for (const pair of event.pairs) {
+    const { bodyA, bodyB } = pair;
+    const labels = [bodyA.label, bodyB.label];
+    const touchesEnemy =
+      (labels[0].startsWith("player/") && labels[1].startsWith("enemy/")) ||
+      (labels[1].startsWith("player/") && labels[0].startsWith("enemy/"));
+
+    if (touchesEnemy) {
+      const enemyBody = labels[0].startsWith("enemy/") ? bodyA : bodyB;
+      const playerBodyHit = labels[0].startsWith("player/") ? bodyA : bodyB;
+      const enemy = scene.enemies.find((entry) => entry.body === enemyBody);
+      if (enemy && !enemy.collapsed) {
+        Composite.remove(game.engine.world, enemy.body);
+        collapseEnemy(enemy, playerBodyHit);
+        sfx("hit");
+        lose();
+      }
+      return;
+    }
+
+    const touchesGoal =
+      (labels[0].startsWith("player/") && labels[1] === "goal") ||
+      (labels[1].startsWith("player/") && labels[0] === "goal");
+    if (touchesGoal) {
+      win();
+      return;
+    }
+  }
+}
+
+function update(deltaMs) {
+  const deltaSeconds = deltaMs / 1000;
+  state.worldTime += deltaSeconds;
+
+  if (state.mode === "won") {
+    return;
+  }
+
+  updateWind(deltaSeconds);
+  updateFlyingEnemies(deltaMs);
+  updateEnemyPatrol(deltaMs);
+  controlPlayer();
+  Engine.update(game.engine, deltaMs);
+  lockTorsoRotation();
+
+  if (state.mode === "playing") {
+    state.timer += deltaSeconds;
+  }
+}
+
+function resetGame(canvas) {
+  canvas.style.filter = "";
+  const endOverlay = document.getElementById("end-img-overlay");
+  endOverlay.style.transition = "none";
+  endOverlay.style.opacity = "0";
+  void endOverlay.offsetHeight;
+  endOverlay.style.transition = "opacity 4s ease";
+  for (const key of Object.keys(keys)) {
+    delete keys[key];
+  }
+
+  game.engine = Engine.create();
+  game.engine.gravity.y = 1;
+  game.engine.gravity.scale = 0.00145;
+  game.engine.positionIterations = 10;
+  game.engine.velocityIterations = 8;
+  game.engine.constraintIterations = 6;
+
+  Composite.add(game.engine.world, createTerrainBodies());
+  createEnemies(game.engine);
+
+  const goalSize = 180 * (ASSETS.goal.scale || 1);
+  const goalOffsetY = ASSETS.goal.offsetY || 0;
+  const goalTop = groundHeightAt(scene.goalX) - goalSize * ASSETS.goal.anchorY + goalOffsetY;
+  const goalBody = Bodies.rectangle(
+    scene.goalX,
+    goalTop + goalSize / 2,
+    goalSize * 0.8,
+    goalSize,
+    {
+      isStatic: true,
+      isSensor: true,
+      label: "goal",
+      render: { visible: false },
+    }
+  );
+  Composite.add(game.engine.world, goalBody);
+
+  game.player = createPlayer();
+  Events.on(game.engine, "collisionStart", handleCollisions);
+
+  state.mode = "ready";
+  state.timer = 0;
+  state.worldTime = 0;
+  state.cameraX = 0;
+  state.windTime = 0.35;
+  state.windForce = 0;
+  state.surrendered = false;
+  state.lostAt = 0;
+  state.wonAt = 0;
+  state.winRecord = "";
+  state.winConfetti = null;
+  state.winScreenShake = 0;
+  state.retryReady = false;
+
+  game.lastFrame = 0;
+
+  settleInitialPose();
+  game.engine.timing.lastDelta = 1000 / 60;
+}
+
+function loop(timestamp, ctx, canvas, timerEl) {
+  if (!game.lastFrame) {
+    game.lastFrame = timestamp;
+  }
+
+  const delta = Math.min(33, timestamp - game.lastFrame);
+  game.lastFrame = timestamp;
+  state.lastDelta = delta;
+  if (delta > 0) update(delta);
+  render(ctx, canvas, timerEl);
+  requestAnimationFrame((ts) => loop(ts, ctx, canvas, timerEl));
+}
+
+// === main.js ===
+if (!window.Matter) {
+  throw new Error("Matter.js is required");
+}
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const timerEl = document.getElementById("timer");
+
+function resize() {
+  viewport.width = window.innerWidth;
+  viewport.height = window.innerHeight;
+  viewport.dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(viewport.width * viewport.dpr);
+  canvas.height = Math.floor(viewport.height * viewport.dpr);
+  canvas.style.width = `${viewport.width}px`;
+  canvas.style.height = `${viewport.height}px`;
+  ctx.setTransform(viewport.dpr, 0, 0, viewport.dpr, 0, 0);
+  configureCourse();
+  if (state.mode === "ready") {
+    resetGame(canvas);
+  }
+}
+
+window.addEventListener("keydown", (event) => {
+  const key = event.key.toLowerCase();
+  if (["q", "w", "o", "p"].includes(key) || event.code === "Space") {
+    event.preventDefault();
+  }
+
+  if (event.code === "Space" && state.retryReady) {
+    sfx("retry");
+    resetGame(canvas);
+    return;
+  }
+
+  if (event.code === "Escape" && state.retryReady) {
+    window.location.href = "../";
+    return;
+  }
+
+  keys[key] = true;
+});
+
+window.addEventListener("keyup", (event) => {
+  keys[event.key.toLowerCase()] = false;
+});
+
+document.getElementById("surrender-btn").addEventListener("click", (e) => {
+  e.target.blur();
+  surrender();
+});
+
+window.addEventListener("resize", resize);
+
+resize();
+resetGame(canvas);
+requestAnimationFrame((ts) => loop(ts, ctx, canvas, timerEl));
+
+    </script>
+  </body>
+</html>
