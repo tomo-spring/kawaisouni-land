@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>かわいそうに！ランド</title>
+  <style>
+    :root {
+      --paper: #f4efc6;
+      --peach: #ffb25e;
+      --orange: #ff8f3f;
+      --ink: #3f2d22;
+      --pink: #ffbfd1;
+      --pink-deep: #ff7198;
+      --sky: #9dd5ff;
+      --blue: #6e96ff;
+      --mint: #d9f0cb;
+      --lemon: #eef16a;
+      --shadow: rgba(80, 45, 10, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #5ee8c0;
+    }
+
+    .frame {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      position: relative;
+    }
+
+    .ufo-overlay {
+      position: absolute;
+      pointer-events: none;
+      z-index: 2;
+      object-fit: contain;
+      visibility: hidden;
+    }
+
+    canvas {
+      display: block;
+      position: relative;
+      z-index: 1;
+      max-width: 100vw;
+      max-height: 100vh;
+      width: min(100vw, calc(100vh * 1400 / 792));
+      height: min(100vh, calc(100vw * 792 / 1400));
+      image-rendering: auto;
+    }
+
+    /* ゲームポップアップ - Windows 3.1風 */
+    .game-popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .game-popup-overlay.active {
+      display: flex;
+      animation: popup-fadein 0.15s ease-out;
+    }
+    @keyframes popup-fadein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .game-popup {
+      background: #ffbfd1;
+      max-width: 820px;
+      width: 94vw;
+      position: relative;
+      border-top: 3px solid #ffe0ea;
+      border-left: 3px solid #ffe0ea;
+      border-right: 3px solid #cc6688;
+      border-bottom: 3px solid #cc6688;
+      box-shadow: inset 1px 1px 0 #ffd0dd, inset -1px -1px 0 #bb5577, 6px 6px 0 rgba(0,0,0,0.25);
+      padding: 3px;
+    }
+    .game-popup-header {
+      background: linear-gradient(90deg, #ff50a0, #ff88c0, #ff50a0);
+      color: #ffffff;
+      font-family: "MS Gothic", "Courier New", monospace;
+      font-weight: 900;
+      font-size: 16px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-shadow: 1px 1px 0 #aa2060;
+      letter-spacing: 2px;
+      user-select: none;
+    }
+    .game-popup-body {
+      display: flex;
+      padding: 24px;
+      gap: 28px;
+      align-items: stretch;
+      background: #fff5f8;
+      border-top: 2px solid #ffe0ea;
+      border-bottom: 2px solid #ffe0ea;
+    }
+    .game-popup-thumb-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .game-popup-noise {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      pointer-events: none;
+      border: 3px solid transparent;
+      opacity: 0;
+      z-index: 1;
+    }
+    .game-popup-thumb {
+      width: 300px;
+      min-width: 300px;
+      border: 3px solid #cc6688;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.15);
+      image-rendering: auto;
+      background: #ffe0ea;
+      object-fit: cover;
+    }
+    .game-popup-thumb-label {
+      font-family: "MS Gothic", "Courier New", monospace;
+      font-size: 10px;
+      color: #aa5577;
+      text-align: center;
+    }
+    .game-popup-right {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .game-popup-subtitle {
+      font-family: "MS Gothic", "Courier New", monospace;
+      font-size: 18px;
+      font-weight: 900;
+      color: #ff50a0;
+      border-bottom: 2px dashed #ffbfd1;
+      padding-bottom: 8px;
+    }
+    .game-popup-desc {
+      color: #3d2d21;
+      font-family: "MS Gothic", "Courier New", monospace;
+      font-size: 14px;
+      line-height: 2;
+      background: #ffffff;
+      border-top: 2px solid #cc6688;
+      border-left: 2px solid #cc6688;
+      border-right: 2px solid #ffe0ea;
+      border-bottom: 2px solid #ffe0ea;
+      padding: 16px;
+      flex: 1;
+    }
+    .game-popup-counter {
+      font-family: "MS Gothic", "Courier New", monospace;
+      font-size: 10px;
+      color: #aa5577;
+      text-align: right;
+    }
+    .game-popup-footer {
+      text-align: center;
+      padding: 12px 10px;
+      background: #ffbfd1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .game-popup-btn {
+      font-family: "MS Gothic", "Courier New", monospace;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      padding: 6px 0;
+      width: 120px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    /* START ボタン */
+    .game-popup-btn-start {
+      background: #ff5090;
+      border-top: 2px solid #ff80b8;
+      border-left: 2px solid #ff80b8;
+      border-right: 2px solid #b8305a;
+      border-bottom: 2px solid #b8305a;
+      color: #ffffff;
+      text-shadow: 1px 1px 0 #882244;
+    }
+    .game-popup-btn-start:hover {
+      background: #ff60a0;
+    }
+    .game-popup-btn-start:active {
+      border-top: 2px solid #b8305a;
+      border-left: 2px solid #b8305a;
+      border-right: 2px solid #ff80b8;
+      border-bottom: 2px solid #ff80b8;
+    }
+    /* CANCEL ボタン */
+    .game-popup-btn-cancel {
+      background: #ffe0ea;
+      border-top: 2px solid #fff0f4;
+      border-left: 2px solid #fff0f4;
+      border-right: 2px solid #cc8899;
+      border-bottom: 2px solid #cc8899;
+      color: #aa5577;
+      text-shadow: none;
+    }
+    .game-popup-btn-cancel:hover {
+      background: #ffe8f0;
+    }
+    .game-popup-btn-cancel:active {
+      border-top: 2px solid #cc8899;
+      border-left: 2px solid #cc8899;
+      border-right: 2px solid #fff0f4;
+      border-bottom: 2px solid #fff0f4;
+    }
+    .game-popup-header-close {
+      background: #ffa0c8;
+      border-top: 1px solid #ffc0dd;
+      border-left: 1px solid #ffc0dd;
+      border-right: 1px solid #cc4488;
+      border-bottom: 1px solid #cc4488;
+      color: #ffffff;
+      font-family: "MS Gothic", monospace;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      padding: 0 5px;
+      line-height: 18px;
+    }
+    .game-popup-header-close:hover {
+      background: #ffb0d4;
+    }
+    /* モバイル対応 */
+    @media (max-width: 560px) {
+      .game-popup-body {
+        flex-direction: column;
+        align-items: center;
+        padding: 14px;
+        gap: 14px;
+      }
+      .game-popup-thumb {
+        width: 100%;
+        min-width: unset;
+        max-width: 260px;
+      }
+      .game-popup-right {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body oncontextmenu="return false">
+  <main class="frame">
+    <img id="bg-green" class="ufo-overlay" src="assets/background-green.png" style="z-index:0; object-fit:cover;">
+    <canvas id="screen" width="1400" height="792" aria-label="おぱんちゅゲームランドのピクセルアート画面"></canvas>
+    <img id="bg-wall" class="ufo-overlay" src="assets/background-wall.png" style="z-index:1;">
+    <img id="ufo-overlay-0" class="ufo-overlay" src="assets/ufo1.gif">
+    <img id="ufo-overlay-1" class="ufo-overlay" src="assets/ufo2.png">
+    <img id="ufo-overlay-2" class="ufo-overlay" src="assets/ufo1.gif">
+  </main>
+
+  <!-- ゲームポップアップ -->
+  <div id="game-popup-overlay" class="game-popup-overlay">
+    <div class="game-popup">
+      <div class="game-popup-header">
+        <span id="popup-title"></span>
+        <button class="game-popup-header-close" id="popup-header-close">&#215;</button>
+      </div>
+      <div class="game-popup-body">
+        <div class="game-popup-thumb-wrap">
+          <img class="game-popup-thumb" id="popup-thumb" src="">
+          <canvas class="game-popup-noise" id="popup-noise"></canvas>
+          <div class="game-popup-thumb-label">- screenshot.bmp -</div>
+        </div>
+        <div class="game-popup-right">
+          <div class="game-popup-subtitle" id="popup-subtitle"></div>
+          <div class="game-popup-desc" id="popup-desc"></div>
+          <div class="game-popup-counter" id="popup-counter">ACCESS: 000000</div>
+        </div>
+      </div>
+      <div class="game-popup-footer">
+        <button class="game-popup-btn game-popup-btn-cancel" id="popup-cancel">CANCEL</button>
+        <button class="game-popup-btn game-popup-btn-start" id="popup-close">START</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/drawing.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/screens.js"></script>
+  <script src="js/ufo-dotart-data.js"></script>
+  <script src="js/cabinets.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
