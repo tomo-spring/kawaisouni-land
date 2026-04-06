@@ -77,3 +77,7 @@ Game.ufoCatcherColors = [
 
 Game.hoveredCabinet = null;
 Game.selectedCabinet = null;
+
+// 矢印キーで選択可能なゲーム機のインデックス（cabinets配列内）
+Game.selectableIndices = [0, 1]; // sad-run, train
+Game.cursorIndex = 0; // 現在の選択位置

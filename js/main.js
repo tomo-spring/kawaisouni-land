@@ -93,6 +93,19 @@
   var popupSubtitle = document.getElementById("popup-subtitle");
   var popupCounter = document.getElementById("popup-counter");
 
+  // ポップアップ内ボタン選択状態（0=CANCEL, 1=START）
+  var popupBtnIndex = 1;
+  var popupBtns = [
+    document.getElementById("popup-cancel"),
+    document.getElementById("popup-close")
+  ];
+
+  function updatePopupBtnHighlight() {
+    for (var i = 0; i < popupBtns.length; i++) {
+      popupBtns[i].classList.toggle("kb-selected", i === popupBtnIndex);
+    }
+  }
+
   function showPopup(id) {
     var data = popupData[id];
     if (!data) return;
@@ -124,6 +137,9 @@
     }
     Game._currentPopupId = id;
     popupOverlay.classList.add("active");
+    // ポップアップ開いたらSTARTを初期選択
+    popupBtnIndex = 1;
+    updatePopupBtnHighlight();
   }
 
   var popupThumbTimer = null;
@@ -242,6 +258,10 @@
     noiseCanvas.style.opacity = "0";
     popupOverlay.classList.remove("active");
     Game.selectedCabinet = null;
+    // ボタンハイライトをリセット
+    for (var i = 0; i < popupBtns.length; i++) {
+      popupBtns[i].classList.remove("kb-selected");
+    }
   }
 
   popupClose.addEventListener("click", function() {
@@ -256,6 +276,48 @@
   document.getElementById("popup-header-close").addEventListener("click", hidePopup);
   popupOverlay.addEventListener("click", function(event) {
     if (event.target === popupOverlay) hidePopup();
+  });
+
+  // 矢印キーでゲーム機・ポップアップボタンを選択
+  window.addEventListener("keydown", function(event) {
+    var isPopupOpen = popupOverlay.classList.contains("active");
+
+    if (isPopupOpen) {
+      // ポップアップ内: CANCEL / START を左右で切り替え
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        popupBtnIndex = 0;
+        updatePopupBtnHighlight();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        popupBtnIndex = 1;
+        updatePopupBtnHighlight();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        popupBtns[popupBtnIndex].click();
+      }
+      return;
+    }
+
+    // メイン画面: ゲーム機を左右で切り替え
+    var indices = Game.selectableIndices;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      var pos = indices.indexOf(Game.cursorIndex);
+      if (pos > 0) Game.cursorIndex = indices[pos - 1];
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      var pos = indices.indexOf(Game.cursorIndex);
+      if (pos < indices.length - 1) Game.cursorIndex = indices[pos + 1];
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      var cabinetIdx = Game.cursorIndex;
+      var cabinet = Game.cabinets[cabinetIdx];
+      if (cabinet && popupData[cabinet.id]) {
+        Game.selectedCabinet = cabinet;
+        showPopup(cabinet.id);
+      }
+    }
   });
 
   canvas.addEventListener("click", function(event) {
@@ -329,18 +391,23 @@
       el.style.height = ph + "px";
       el.style.visibility = "visible";
 
-      // ホバー中はGIF、解除時はend GIF、通常は静止画
-      var isHovered = Game.hoveredCabinet && Game.hoveredCabinet.id === m.id;
+      // UFO-2はキャラが前で止まったら再生、それ以外はホバーで再生
       var data = ufoOverlayData[i];
-      if (isHovered) {
-        if (!el._wasHovered) {
-          el._wasHovered = true;
+      var isActive;
+      if (m.id === "ufo-2") {
+        isActive = !!Game._charAtUfo2;
+      } else {
+        isActive = Game.hoveredCabinet && Game.hoveredCabinet.id === m.id;
+      }
+      if (isActive) {
+        if (!el._wasActive) {
+          el._wasActive = true;
           el.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
           el.offsetHeight; // 強制再描画
           el.src = data.gif + "?" + Date.now();
         }
-      } else if (el._wasHovered) {
-        el._wasHovered = false;
+      } else if (el._wasActive) {
+        el._wasActive = false;
         if (data.end) {
           el.src = data.end + "?" + Date.now();
         } else {

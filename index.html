@@ -31,7 +31,7 @@
     body {
       margin: 0;
       overflow: hidden;
-      background: #5ee8c0;
+      background: #65e7a9;
     }
 
     .frame {
@@ -184,7 +184,7 @@
     }
     .game-popup-footer {
       text-align: center;
-      padding: 12px 10px;
+      padding: 50px 10px 12px;
       background: #ffbfd1;
       display: flex;
       justify-content: center;
@@ -238,6 +238,50 @@
       border-left: 2px solid #cc8899;
       border-right: 2px solid #fff0f4;
       border-bottom: 2px solid #fff0f4;
+    }
+    /* キーボード選択時のハイライト */
+    .game-popup-btn {
+      position: relative;
+    }
+    .game-popup-btn.kb-selected {
+      outline: 3px solid #00ff00;
+      outline-offset: 2px;
+      box-shadow: 0 0 12px #00ff00;
+    }
+    .game-popup-btn.kb-selected::before {
+      content: "SELECT";
+      position: absolute;
+      left: 50%;
+      top: -40px;
+      transform: translateX(-50%);
+      font-family: "Courier New", monospace;
+      font-size: 24px;
+      font-weight: 900;
+      color: #ff0000;
+      -webkit-text-stroke: 4px #00cc00;
+      paint-order: stroke fill;
+      text-shadow: 0 0 8px #00ff00;
+      animation: select-bounce 0.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .game-popup-btn.kb-selected::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -16px;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 14px solid #00dd00;
+      filter: drop-shadow(0 0 8px #00ff00);
+      animation: select-bounce 0.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes select-bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-6px); }
     }
     .game-popup-header-close {
       background: #ffa0c8;

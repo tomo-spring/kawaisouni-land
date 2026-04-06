@@ -17,6 +17,57 @@ Game.drawScreenScanlines = function() {
   }
 };
 
+Game.drawSelectionCursor = function(time) {
+  var ctx = Game.ctx;
+  var cabinet = Game.cabinets[Game.cursorIndex];
+  if (!cabinet) return;
+
+  var cx = cabinet.x + cabinet.w / 2;
+  var cy = cabinet.y;
+  var bounce = Math.sin(time / 200) * 6;
+
+  // 緑の枠線（グロー）
+  ctx.save();
+  ctx.strokeStyle = "#00ff00";
+  ctx.lineWidth = 6;
+  ctx.shadowColor = "#00ff00";
+  ctx.shadowBlur = 16;
+  ctx.strokeRect(cabinet.x - 8, cabinet.y - 8, cabinet.w + 16, cabinet.h + 16);
+  ctx.restore();
+
+  // "SELECT" テキスト（赤に緑の縁取り風）
+  var textY = cy - 50 + bounce;
+  var fontSize = 36;
+  var font = '900 ' + fontSize + 'px "Courier New", monospace';
+  ctx.save();
+  ctx.font = font;
+  ctx.textAlign = "center";
+  // 緑のアウトライン
+  ctx.strokeStyle = "#00cc00";
+  ctx.lineWidth = 6;
+  ctx.strokeText("SELECT", cx, textY);
+  // 赤の塗り
+  ctx.fillStyle = "#ff0000";
+  ctx.fillText("SELECT", cx, textY);
+  ctx.restore();
+
+  // 下向き矢印（緑）
+  var arrowY = cy - 34 + bounce;
+  var arrowW = 30;
+  var arrowH = 20;
+  ctx.save();
+  ctx.fillStyle = "#00dd00";
+  ctx.shadowColor = "#00ff00";
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.moveTo(cx - arrowW, arrowY);
+  ctx.lineTo(cx + arrowW, arrowY);
+  ctx.lineTo(cx, arrowY + arrowH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+};
+
 Game.ufoImage = new Image();
 Game.ufoImage.src = "assets/ufo-game.png";
 
@@ -79,6 +130,9 @@ Game.drawScene = function(time) {
   Game.drawFrontCabinet(cabinets[1], themes[1], time);
   Game.drawFrontCabinet(cabinets[2], themes[2], time);
 
+  // 選択カーソル表示
+  Game.drawSelectionCursor(time);
+
   // キャラクターがウロウロ歩く
   var charImg = Game.characterImage;
   if (charImg.complete && charImg.naturalWidth > 0) {
@@ -125,6 +179,8 @@ Game.drawScene = function(time) {
     var cycleT = adjustedTime % totalCycle;
     var walkX, facingRight, bobY = 0;
 
+    Game._charAtUfo2 = false;
+
     if (cycleT < phase1) {
       walkX = walkStart + (cycleT / phase1) * distToUfo2;
       facingRight = true;
@@ -133,11 +189,13 @@ Game.drawScene = function(time) {
       walkX = ufo2X;
       facingRight = true;
       bobY = 0;
+      Game._charAtUfo2 = true;
     } else if (cycleT < phase1 + phase2 + phase3) {
       walkX = ufo2X;
       facingRight = true;
       var jumpT = cycleT - phase1 - phase2;
       bobY = Math.abs(Math.sin(jumpT * 0.008)) * 4;
+      Game._charAtUfo2 = true;
     } else if (cycleT < phase1 + phase2 + phase3 + phase4) {
       var t4 = cycleT - phase1 - phase2 - phase3;
       walkX = ufo2X + (t4 / phase4) * (walkEnd - ufo2X);
@@ -159,10 +217,12 @@ Game.drawScene = function(time) {
       walkX = ufo2X;
       facingRight = false;
       bobY = 0;
+      Game._charAtUfo2 = true;
     } else if (cycleT < phase1 + phase2 + phase3 + phase4 + phase5 + phase6 + phase7 + phase8) {
       // ぴょんぴょん
       walkX = ufo2X;
       facingRight = false;
+      Game._charAtUfo2 = true;
       var jumpT2 = cycleT - phase1 - phase2 - phase3 - phase4 - phase5 - phase6 - phase7;
       bobY = Math.abs(Math.sin(jumpT2 * 0.008)) * 4;
     } else if (cycleT < phase1 + phase2 + phase3 + phase4 + phase5 + phase6 + phase7 + phase8 + phase9) {
