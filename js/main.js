@@ -86,6 +86,7 @@
       title: "おぱんちゅ速履き.exe",
       subtitle: "～おぱんちゅを誰よりも速く履こう～",
       thumb: "assets/opantyu-thumb.png",
+      thumb2: "assets/opantyu-thumb-2.png",
       desc: "おぱんちゅうさぎがパンツを速く履くゲーム！\nタイミングよくボタンを押して最速を目指そう！\nランキングに載れるかな...！？",
       url: "opantyu/index.html"
     }

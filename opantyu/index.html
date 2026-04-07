@@ -527,23 +527,41 @@ body::after {
   text-shadow: 1px 1px 0 #000;
 }
 
-#name-input-area input {
+#name-slots {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.name-slot {
   font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
-  font-size: 28px;
-  padding: 8px 16px;
-  width: 280px;
+  font-size: 40px;
+  width: 56px;
+  height: 60px;
+  line-height: 60px;
   text-align: center;
   border: 4px solid #29adff;
   background: #1d2b53;
   color: #fff1e8;
-  margin-bottom: 12px;
-  outline: none;
   text-shadow: 1px 1px 0 #000;
 }
 
-#name-input-area input:focus {
+.name-slot.active {
   border-color: #ffec27;
   box-shadow: 0 0 10px rgba(255,236,39,0.5);
+  animation: slot-blink 0.6s infinite;
+}
+
+@keyframes slot-blink {
+  0%, 100% { border-color: #ffec27; }
+  50% { border-color: #29adff; }
+}
+
+.name-hint {
+  color: #83769c;
+  font-size: 13px;
+  margin-bottom: 12px;
+  text-shadow: 1px 1px 0 #000;
 }
 
 #name-input-area button {
@@ -777,7 +795,12 @@ body::after {
       <div id="name-input-area">
         <h3 class="pixel-text">ハイスコア!</h3>
         <p class="pixel-text">名前を入力してください</p>
-        <input type="text" id="name-input" maxlength="10" placeholder="なまえ">
+        <div id="name-slots">
+          <div class="name-slot active" data-index="0">A</div>
+          <div class="name-slot" data-index="1">A</div>
+          <div class="name-slot" data-index="2">A</div>
+        </div>
+        <div class="name-hint pixel-text">↑↓: 文字選択　←→: 移動　決定: Enter</div>
         <button id="name-submit" class="pixel-text">決定</button>
       </div>
 
@@ -829,8 +852,12 @@ body::after {
   const rankLabel    = document.getElementById('rank-label');
   const nameArea     = document.getElementById('name-input-area');
   const rankingArea  = document.getElementById('ranking-area');
-  const nameInput    = document.getElementById('name-input');
+  const nameSlots    = document.querySelectorAll('.name-slot');
   const nameSubmit   = document.getElementById('name-submit');
+  const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const BAD_WORDS = ['SEX','FUC','FUK','FCK','DIK','DIE','ASS','FAG','GAY','NIG','COK','CUM','TIT','VAG','WTF','KKK','SUK','SUC','PUS'];
+  let slotValues = [0, 0, 0]; // index into LETTERS
+  let activeSlot = 0;
   const rankingList  = document.getElementById('ranking-list');
   const celebCanvas  = document.getElementById('celebration-canvas');
   const celebCtx     = celebCanvas.getContext('2d');
@@ -1122,19 +1149,39 @@ body::after {
   // --- Ranking (server JSON file with localStorage fallback) ---
   let cachedRanking = [];
 
+  function generateDummyRanking() {
+    const names = [
+      'ACE','BOB','CAT','DAN','ELI','FOX','GUS','HAL','IAN','JAY',
+      'KAI','LEO','MAX','NEO','OAK','PAT','RAY','SAM','TOM','VIC',
+      'WAL','YUI','ZAK','AMI','BEN','CUP','DOC','EVE','FIN','GIN',
+      'HOP','ICE','JOE','KEN','LUC','MAO','NED','OWL','PEN','RIN',
+      'SKY','TAO','UMI','VAN','WIZ','YAM','ZEN','APE','BAT','COW'
+    ];
+    const entries = [];
+    for (let i = 0; i < names.length; i++) {
+      const base = 0.15 + (i / names.length) * 0.85;
+      const jitter = (Math.sin(i * 137.5) * 0.5 + 0.5) * 0.08;
+      entries.push({ name: names[i], score: parseFloat((base + jitter).toFixed(3)), dummy: true });
+    }
+    entries.sort((a, b) => a.score - b.score);
+    return entries;
+  }
+
   async function fetchRanking() {
+    let data = null;
     try {
       const res = await fetch('/api/ranking');
       if (res.ok) {
-        cachedRanking = await res.json();
-        return cachedRanking;
+        data = await res.json();
       }
     } catch {}
-    // Fallback to localStorage
-    try {
-      const data = localStorage.getItem(RANKING_KEY);
-      cachedRanking = data ? JSON.parse(data) : [];
-    } catch { cachedRanking = []; }
+    if (!data) {
+      try {
+        const raw = localStorage.getItem(RANKING_KEY);
+        data = raw ? JSON.parse(raw) : null;
+      } catch {}
+    }
+    cachedRanking = (data && data.length > 0) ? data : generateDummyRanking();
     return cachedRanking;
   }
 
@@ -1471,10 +1518,11 @@ body::after {
       sfxHighScore();
       nameArea.classList.add('active');
       rankingArea.classList.remove('active');
-      nameInput.value = '';
+      slotValues = [0, 0, 0];
+      activeSlot = 0;
+      updateSlotDisplay();
       isEnteringName = true;
       showScreen('result');
-      setTimeout(() => nameInput.focus(), 100);
     } else {
       // Top10外は匿名で自動保存
       addScore('-', reactionTime);
@@ -1485,9 +1533,35 @@ body::after {
     }
   }
 
+  function getSlotName() {
+    return slotValues.map(i => LETTERS[i]).join('');
+  }
+
+  function isNgWord(name) {
+    return BAD_WORDS.includes(name);
+  }
+
+  function updateSlotDisplay() {
+    nameSlots.forEach((el, i) => {
+      el.textContent = LETTERS[slotValues[i]];
+      el.classList.toggle('active', i === activeSlot);
+    });
+  }
+
   function submitName() {
+    const name = getSlotName();
+    if (isNgWord(name)) {
+      // NGワードの場合はスロットを揺らして拒否
+      nameSlots.forEach(el => {
+        el.style.color = '#ff004d';
+        el.style.animation = 'none';
+        el.offsetHeight;
+        el.style.animation = '';
+      });
+      setTimeout(() => nameSlots.forEach(el => el.style.color = ''), 400);
+      return;
+    }
     sfxClick();
-    const name = nameInput.value.trim() || 'ななし';
     const rankings = addScore(name, reactionTime);
     nameArea.classList.remove('active');
     isEnteringName = false;
@@ -1497,11 +1571,11 @@ body::after {
   function displayRanking(rankings) {
     rankingArea.classList.add('active');
     rankingList.innerHTML = '';
-    const top10 = rankings.slice(0, MAX_RANKING);
-    top10.forEach((entry, i) => {
+    const top = rankings.slice(0, MAX_RANKING);
+    top.forEach((entry, i) => {
       const li = document.createElement('li');
       const medal = `${i+1}位`;
-      li.textContent = `${medal}  ${entry.name.padEnd(10, '.')}  ${entry.score.toFixed(3)}秒`;
+      li.textContent = `${medal}  ${entry.name.padEnd(3, '.')}  ${entry.score.toFixed(3)}秒`;
       li.classList.add('pixel-text');
       if (Math.abs(entry.score - reactionTime) < 0.0001) {
         li.classList.add('highlight');
@@ -1558,15 +1632,40 @@ body::after {
     submitName();
   });
 
-  nameInput.addEventListener('keydown', (e) => {
-    e.stopPropagation();
-    if (e.key === 'Enter') submitName();
+  nameSlots.forEach((el, i) => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activeSlot = i;
+      slotValues[i] = (slotValues[i] + 1) % LETTERS.length;
+      updateSlotDisplay();
+    });
   });
 
-  nameInput.addEventListener('click', (e) => e.stopPropagation());
-
   document.addEventListener('keydown', (e) => {
-    if (e.key === ' ' && !isEnteringName) {
+    if (isEnteringName) {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        slotValues[activeSlot] = (slotValues[activeSlot] + 1) % LETTERS.length;
+        updateSlotDisplay();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        slotValues[activeSlot] = (slotValues[activeSlot] - 1 + LETTERS.length) % LETTERS.length;
+        updateSlotDisplay();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        activeSlot = Math.min(activeSlot + 1, 2);
+        updateSlotDisplay();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        activeSlot = Math.max(activeSlot - 1, 0);
+        updateSlotDisplay();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        submitName();
+      }
+      return;
+    }
+    if (e.key === ' ') {
       e.preventDefault();
       container.click();
     }
