@@ -708,6 +708,29 @@ body::after {
 #game-container video {
   image-rendering: pixelated;
 }
+
+.home-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 50;
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+  font-size: 14px;
+  padding: 8px 14px;
+  background: rgba(15,15,35,0.6);
+  color: #c2c3c7;
+  border: 2px solid #5f574f;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s, border-color 0.2s;
+}
+.home-btn:hover {
+  color: #ffec27;
+  border-color: #ffec27;
+}
 </style>
 <!-- Google Fonts: DotGothic16 for pixel look -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -725,6 +748,7 @@ body::after {
         - スペースキーかクリックでスタート -
       </span>
     </div>
+    <a href="../" class="home-btn pixel-text">← ホームへ</a>
   </div>
 
   <!-- Start screen 2: opimage2 -->
@@ -809,7 +833,7 @@ body::after {
         <ol id="ranking-list"></ol>
       </div>
 
-      <div class="retry-text pixel-text">クリックでリトライ</div>
+      <div class="retry-text pixel-text">クリックでホームに戻る</div>
     </div>
   </div>
 
@@ -817,7 +841,7 @@ body::after {
   <div id="penalty-screen" class="screen">
     <div class="penalty-title pixel-text">おてつき!</div>
     <div class="penalty-sub pixel-text">まだ履いてない...</div>
-    <div class="retry-text pixel-text">クリックでリトライ</div>
+    <div class="retry-text pixel-text">クリックでホームに戻る</div>
   </div>
 </div>
 
@@ -1476,15 +1500,15 @@ body::after {
           burstParticles(672, 378, 120, 'spark');
           burstParticles(672, 378, 40, 'star');
           burstParticles(672, 378, 50, 'confetti');
-          // フリーズ演出後4秒で操作受付
-          celebTimer = setTimeout(() => { celebReady = true; }, 4000);
+          // フリーズ演出後2秒で操作受付
+          celebTimer = setTimeout(() => { celebReady = true; }, 2000);
         }, 2300);
 
       } else {
         // ランクイン通常演出
         sfxCelebration();
         startCelebration();
-        celebTimer = setTimeout(() => { celebReady = true; }, 4000);
+        celebTimer = setTimeout(() => { celebReady = true; }, 2000);
       }
     } else if (isFast) {
       // === ランク外だけど速い
@@ -1493,18 +1517,18 @@ body::after {
       playBeep(523, 0.2, 'triangle');
       setTimeout(() => playBeep(659, 0.2, 'triangle'), 150);
       setTimeout(() => playBeep(784, 0.2, 'triangle'), 300);
-      celebTimer = setTimeout(() => { celebReady = true; }, 3000);
+      celebTimer = setTimeout(() => { celebReady = true; }, 1500);
     } else if (isMid) {
       // === 0.35〜0.45秒
       celebScreen.classList.add('celeb-lite');
       startCelebration('minimal');
       sfxClick();
-      celebTimer = setTimeout(() => { celebReady = true; }, 2500);
+      celebTimer = setTimeout(() => { celebReady = true; }, 1200);
     } else {
       // === 遅い
       celebScreen.classList.add('celeb-quiet');
       sfxClick();
-      celebTimer = setTimeout(() => { celebReady = true; }, 2000);
+      celebTimer = setTimeout(() => { celebReady = true; }, 1000);
     }
   }
 
@@ -1615,8 +1639,8 @@ body::after {
         state = 'result';
         showResult();
         break;
-      case 'result': startGame(); break;
-      case 'penalty': startGame(); break;
+      case 'result': window.location.href = '../'; break;
+      case 'penalty': window.location.href = '../'; break;
     }
   });
 
@@ -1670,6 +1694,8 @@ body::after {
       container.click();
     }
   });
+
+  document.querySelector('.home-btn').addEventListener('click', (e) => e.stopPropagation());
 
   // --- Responsive scaling ---
   function resize() {

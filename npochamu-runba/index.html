@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap"
     rel="stylesheet">
   <title>んぽちゃむルンバ</title>
   <style>
@@ -29,11 +29,245 @@
     canvas {
       display: block;
     }
+
+    /* Result screen - retro game style */
+    #result-screen {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 10;
+      background: #1d2b53;
+      background-image: radial-gradient(circle at 50% 50%, #29366f 0%, #1d2b53 70%);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-family: 'DotGothic16', 'Courier New', monospace;
+    }
+    #result-screen.active { display: flex; }
+    .result-panel {
+      background: #0f0f23;
+      border: 6px solid #29adff;
+      padding: 36px 50px;
+      max-width: 700px;
+      width: 85%;
+      text-align: center;
+      box-shadow: 8px 8px 0 #000, 0 0 30px rgba(41,173,255,0.3);
+      position: relative;
+    }
+    .result-panel::before,
+    .result-panel::after {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      background: #29adff;
+    }
+    .result-panel::before { top: -3px; left: -3px; }
+    .result-panel::after { top: -3px; right: -3px; }
+    .result-panel h2 {
+      font-size: 42px;
+      color: #29adff;
+      margin: 0 0 8px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .result-time {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ff004d;
+      margin-bottom: 8px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .result-rank-label {
+      font-size: 24px;
+      color: #ffec27;
+      margin-bottom: 16px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    #name-input-area-r {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    #name-input-area-r.active { display: flex; }
+    #name-input-area-r h3 {
+      font-size: 32px;
+      color: #ffa300;
+      margin: 0 0 8px;
+      text-shadow: 2px 2px 0 #000;
+      animation: rank-blink-text 0.8s infinite;
+    }
+    @keyframes rank-blink-text {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    #name-input-area-r .rank-subtitle {
+      font-size: 18px;
+      color: #c2c3c7;
+      margin-bottom: 12px;
+      text-shadow: 1px 1px 0 #000;
+    }
+    .rank-slots {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .rank-slot {
+      font-family: 'DotGothic16', 'Courier New', monospace;
+      font-size: 40px;
+      font-weight: 900;
+      width: 56px;
+      height: 60px;
+      line-height: 60px;
+      text-align: center;
+      border: 4px solid #29adff;
+      background: #1d2b53;
+      color: #fff1e8;
+      text-shadow: 1px 1px 0 #000;
+    }
+    .rank-slot.active {
+      border-color: #ffec27;
+      box-shadow: 0 0 10px rgba(255,236,39,0.5);
+      animation: rank-blink 0.6s infinite;
+    }
+    @keyframes rank-blink {
+      0%, 100% { border-color: #ffec27; }
+      50% { border-color: #29adff; }
+    }
+    .rank-hint {
+      font-size: 13px;
+      color: #83769c;
+      margin-bottom: 12px;
+      text-shadow: 1px 1px 0 #000;
+    }
+    .rank-btn {
+      font-family: 'DotGothic16', 'Courier New', monospace;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 8px 36px;
+      background: #00e436;
+      color: #0f0f23;
+      border: 4px solid #008751;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 #000;
+      transition: transform 0.1s;
+    }
+    .rank-btn:hover { transform: scale(1.05); }
+    .rank-btn:active {
+      transform: translateY(2px);
+      box-shadow: 2px 2px 0 #000;
+    }
+    #ranking-list-area {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    #ranking-list-area.active { display: flex; }
+    #ranking-list-area h4 {
+      font-size: 28px;
+      color: #ffa300;
+      margin: 0 0 8px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    #ranking-list-area ol {
+      list-style: none;
+      padding: 0;
+      margin: 0 auto 12px;
+      text-align: center;
+    }
+    #ranking-list-area li {
+      font-family: 'DotGothic16', 'Courier New', monospace;
+      font-size: 20px;
+      color: #c2c3c7;
+      padding: 3px 0;
+      text-shadow: 1px 1px 0 #000;
+    }
+    #ranking-list-area li.hl {
+      color: #ffec27;
+      font-weight: bold;
+      animation: rank-blink-text 0.6s infinite;
+    }
+    .result-home {
+      display: inline-block;
+      font-family: 'DotGothic16', 'Courier New', monospace;
+      font-size: 20px;
+      padding: 8px 24px;
+      background: transparent;
+      color: #5f574f;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      text-shadow: 1px 1px 0 #000;
+      animation: rank-blink-text 1.2s infinite;
+    }
+    .result-home:hover {
+      color: #ffec27;
+    }
+
+    .home-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 50;
+      font-family: 'DotGothic16', 'Courier New', monospace;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 6px 12px;
+      background: #1d2b53;
+      color: #c2c3c7;
+      border: 3px solid #29adff;
+      cursor: pointer;
+      text-decoration: none;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      text-shadow: 1px 1px 0 #000;
+      box-shadow: 3px 3px 0 #000;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .home-btn.visible {
+      display: flex;
+    }
+    .home-btn:hover {
+      color: #ffec27;
+      border-color: #ffec27;
+    }
+    .home-btn:active {
+      transform: translateY(2px);
+      box-shadow: 1px 1px 0 #000;
+    }
   </style>
 </head>
 
 <body>
+  <a href="../" class="home-btn">← ホームへ</a>
   <canvas id="c"></canvas>
+  <div id="result-screen">
+    <div class="result-panel">
+      <h2>- 結果 -</h2>
+      <div class="result-time" id="result-time"></div>
+      <div class="result-rank-label" id="result-rank-label"></div>
+
+      <div id="name-input-area-r">
+        <h3>ハイスコア!</h3>
+        <div class="rank-subtitle">名前を入力してください</div>
+        <div class="rank-slots">
+          <div class="rank-slot active" data-index="0">A</div>
+          <div class="rank-slot" data-index="1">A</div>
+          <div class="rank-slot" data-index="2">A</div>
+        </div>
+        <div class="rank-hint">↑↓: 文字選択　←→: 移動　Enter: 決定</div>
+        <button class="rank-btn" id="rank-submit">決定</button>
+      </div>
+
+      <div id="ranking-list-area">
+        <h4>- ランキング -</h4>
+        <ol id="ranking-list-ol"></ol>
+      </div>
+
+    </div>
+  </div>
   <script>
 // === config.js ===
 const config = {
@@ -500,7 +734,8 @@ function createInput(opts) {
   canvas.addEventListener("pointerdown", function(event) {
     audio.ensureAudio();
     if (state.gameState === "title") { state.gameState = "howto"; return; }
-    if (state.gameState === "howto" || state.gameState === "cleared" || state.gameState === "gameover") { onResetGame(); return; }
+    if (state.gameState === "howto") { onResetGame(); return; }
+    if ((state.gameState === "cleared" || state.gameState === "gameover") && !document.getElementById('result-screen').classList.contains('active')) { window.location.href = "../"; return; }
     if (state.gameState === "paused") { state.gameState = "playing"; return; }
     touch.active = true; touch.startX = event.clientX; touch.startY = event.clientY; touch.dx = 0; touch.dy = 0;
   });
@@ -555,22 +790,31 @@ function createRenderer(opts) {
     if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = strokeWidth || 2; ctx.stroke(); }
   }
 
+  var pf = function(s) { return '900 ' + s + 'px "DotGothic16", "Courier New", monospace'; };
+
+  function drawScanlines() {
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = "#fff";
+    for (var sl = 0; sl < GH; sl += 4) { ctx.fillRect(0, sl, GW, 1); }
+    ctx.restore();
+  }
+
   function drawTitleScreen(now) {
-    var grad = ctx.createLinearGradient(0, 0, 0, GH);
-    grad.addColorStop(0, "#f8e8d8"); grad.addColorStop(1, "#fff5ee");
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, GW, GH);
+    ctx.fillStyle = "#0f0f23"; ctx.fillRect(0, 0, GW, GH);
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-    ctx.save();
-    ctx.shadowColor = "rgba(200,120,80,0.3)"; ctx.shadowBlur = 15;
-    ctx.font = '900 ' + Math.floor(GW * 0.065) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "#d4726a"; ctx.fillText("\u3093\u307d\u3061\u3083\u3080\u30eb\u30f3\u30d0", GW / 2, GH * 0.18);
-    ctx.restore();
+    // タイトル
+    ctx.font = pf(Math.floor(GW * 0.06));
+    ctx.fillStyle = "#000"; ctx.fillText("\u3093\u307d\u3061\u3083\u3080\u30eb\u30f3\u30d0", GW / 2 + 3, GH * 0.18 + 3);
+    ctx.fillStyle = "#29adff"; ctx.fillText("\u3093\u307d\u3061\u3083\u3080\u30eb\u30f3\u30d0", GW / 2, GH * 0.18);
 
-    ctx.font = '700 ' + Math.floor(GW * 0.02) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "#8a7060";
+    // サブタイトル
+    ctx.font = pf(Math.floor(GW * 0.02));
+    ctx.fillStyle = "#c2c3c7";
     ctx.fillText("\u30eb\u30f3\u30d0\u3067\u3093\u307d\u3061\u3083\u3080\u3092\u304d\u307f\u307e\u308d\u306e\u5143\u307e\u3067\u9023\u308c\u3066\u884c\u3053\u3046\uff01", GW / 2, GH * 0.27);
 
+    // キャラ画像
     var imgY = GH * 0.33;
     if (images["main.png"]) {
       var height = 180; var width = Math.floor(height * (1728 / 2466));
@@ -580,30 +824,30 @@ function createRenderer(opts) {
       ctx.drawImage(images["\u30eb\u30f3\u30d0.png"], GW / 2 + 20, imgY + 30, 120, 120);
     }
 
+    // ベストタイム
     if (state.bestTime > 0) {
       var minutes = String(Math.floor(state.bestTime / 60)).padStart(2, "0");
       var seconds = String(Math.floor(state.bestTime) % 60).padStart(2, "0");
-      ctx.font = '700 ' + Math.floor(GW * 0.02) + 'px "M PLUS Rounded 1c", monospace';
-      ctx.fillStyle = "#c47a5a";
-      ctx.fillText("BEST  " + minutes + ":" + seconds, GW / 2, GH * 0.82);
+      ctx.font = pf(Math.floor(GW * 0.025));
+      ctx.fillStyle = "#ffa300"; ctx.fillText("BEST  " + minutes + ":" + seconds, GW / 2, GH * 0.82);
     }
 
+    // 点滅テキスト
     var blink = Math.floor(now / 500) % 2 === 0;
     if (blink) {
-      ctx.font = '700 ' + Math.floor(GW * 0.03) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#c47a5a";
-      ctx.fillText("SPACE / \u30bf\u30c3\u30d7 \u3067\u30b9\u30bf\u30fc\u30c8", GW / 2, GH - 40);
+      ctx.font = pf(Math.floor(GW * 0.028));
+      ctx.fillStyle = "#ffec27"; ctx.fillText("SPACE / \u30bf\u30c3\u30d7 \u3067\u30b9\u30bf\u30fc\u30c8", GW / 2, GH - 40);
     }
+
+    drawScanlines();
   }
 
   function drawHowtoScreen(now) {
-    var grad = ctx.createLinearGradient(0, 0, 0, GH);
-    grad.addColorStop(0, "#f8e8d8"); grad.addColorStop(1, "#fff5ee");
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, GW, GH);
+    ctx.fillStyle = "#0f0f23"; ctx.fillRect(0, 0, GW, GH);
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-    ctx.font = '400 ' + Math.floor(GW * 0.04) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "#d4726a"; ctx.fillText("\u30b2\u30fc\u30e0\u8aac\u660e", GW / 2, 55);
+    ctx.font = pf(Math.floor(GW * 0.04));
+    ctx.fillStyle = "#29adff"; ctx.fillText("\u30b2\u30fc\u30e0\u8aac\u660e", GW / 2, 50);
 
     var cards = [
       { title: "1. \u30eb\u30f3\u30d0\u3067\u3093\u307d\u3061\u3083\u3080\u306b\u8fd1\u3065\u3053\u3046", desc: "\u8fd1\u3065\u304f\u3068\u81ea\u52d5\u3067\u304f\u3063\u3064\u304f\u3088\uff01", img: "\u30eb\u30f3\u30d0.png" },
@@ -614,15 +858,13 @@ function createRenderer(opts) {
     var cardW = 280, cardH = 130, cardGap = 16;
     var totalW = cards.length * cardW + (cards.length - 1) * cardGap;
     var cardX = (GW - totalW) / 2;
-    var cardY = 95;
+    var cardY = 90;
 
     for (var ci = 0; ci < cards.length; ci++) {
       var card = cards[ci];
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.1)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 12); ctx.fill();
-      ctx.restore();
+      // レトロ風カード枠
+      ctx.fillStyle = "#1d2b53"; ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.strokeStyle = "#29adff"; ctx.lineWidth = 3; ctx.strokeRect(cardX, cardY, cardW, cardH);
 
       var img = images[card.img];
       if (img) {
@@ -636,11 +878,11 @@ function createRenderer(opts) {
         ctx.drawImage(img, cardX + (cardW - iw) / 2, cardY + iconY, iw, ih);
       }
 
-      ctx.font = '700 15px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#333"; ctx.fillText(card.title, cardX + cardW / 2, cardY + 72);
+      ctx.font = pf(14);
+      ctx.fillStyle = "#ffec27"; ctx.fillText(card.title, cardX + cardW / 2, cardY + 72);
 
-      ctx.font = '500 13px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#666";
+      ctx.font = pf(12);
+      ctx.fillStyle = "#c2c3c7";
       var lines = card.desc.split("\n");
       var lineY = cardY + 93;
       for (var li = 0; li < lines.length; li++) { ctx.fillText(lines[li], cardX + cardW / 2, lineY); lineY += 17; }
@@ -648,53 +890,51 @@ function createRenderer(opts) {
       cardX += cardW + cardGap;
     }
 
-    var tipsY = cardY + cardH + 30;
-    ctx.font = '700 ' + Math.floor(GW * 0.025) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "#d4726a"; ctx.fillText("\uff5e\u6ce8\u610f\uff5e", GW / 2, tipsY);
+    var tipsY = cardY + cardH + 28;
+    ctx.font = pf(Math.floor(GW * 0.025));
+    ctx.fillStyle = "#ff004d"; ctx.fillText("\uff5e\u6ce8\u610f\uff5e", GW / 2, tipsY);
 
     var tips = [
       "\u3093\u307d\u3061\u3083\u3080\u3092\u5f15\u3063\u5f35\u308c\u308b\u306e\u306f\u6ce3\u3044\u3066\u3044\u308b\u9593\u3060\u3051\uff01 \u6ce3\u304d\u6b62\u3080\u524d\u306b\u5b89\u5168\u306a\u3068\u3053\u308d\u3078\u79fb\u52d5\u3057\u3088\u3046\uff01",
       "\u30de\u30ab\u30ed\u30f3\u3092\u98df\u3079\u308b\u3068\u3093\u307d\u3061\u3083\u3080\u304c\u5927\u304d\u304f\u306a\u3063\u3066\u5f15\u304d\u305a\u308a\u306b\u304f\u304f\u306a\u308b\u304b\u3089\u6c17\u3092\u3064\u3051\u3066\uff01",
     ];
-    ctx.font = '500 14px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "#555";
-    var tipY = tipsY + 34;
+    ctx.font = pf(13);
+    ctx.fillStyle = "#83769c";
+    var tipY = tipsY + 32;
     for (var ti = 0; ti < tips.length; ti++) { ctx.fillText(tips[ti], GW / 2, tipY); tipY += 22; }
 
-    var ctrlY = tipY + 28;
-    ctx.font = '700 ' + Math.floor(GW * 0.025) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "#d4726a"; ctx.fillText("\u64cd\u4f5c", GW / 2, ctrlY);
+    var ctrlY = tipY + 24;
+    ctx.font = pf(Math.floor(GW * 0.025));
+    ctx.fillStyle = "#ffa300"; ctx.fillText("\u64cd\u4f5c", GW / 2, ctrlY);
 
     var controls = [{ key: "\u2191\u2193\u2190\u2192 / WASD", label: "\u79fb\u52d5" }];
     var controlY = ctrlY + 34;
     for (var ki = 0; ki < controls.length; ki++) {
       var control = controls[ki];
-      ctx.font = '700 14px "M PLUS Rounded 1c", monospace';
+      ctx.font = pf(14);
       var keyWidth = ctx.measureText(control.key).width + 14;
-      var keyHeight = 26;
+      var keyHeight = 28;
       var keyX = GW / 2 - keyWidth / 2 - 30;
 
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.2)"; ctx.shadowBlur = 3; ctx.shadowOffsetY = 2;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath(); ctx.roundRect(keyX, controlY - keyHeight / 2, keyWidth, keyHeight, 5); ctx.fill();
-      ctx.restore();
+      ctx.fillStyle = "#1d2b53"; ctx.fillRect(keyX, controlY - keyHeight / 2, keyWidth, keyHeight);
+      ctx.strokeStyle = "#29adff"; ctx.lineWidth = 3; ctx.strokeRect(keyX, controlY - keyHeight / 2, keyWidth, keyHeight);
 
-      ctx.fillStyle = "#333"; ctx.font = '700 14px "M PLUS Rounded 1c", monospace';
-      ctx.textAlign = "center"; ctx.fillText(control.key, keyX + keyWidth / 2, controlY);
-      ctx.font = '700 14px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#333"; ctx.textAlign = "left";
-      ctx.fillText(control.label, keyX + keyWidth + 8, controlY);
+      ctx.fillStyle = "#fff1e8"; ctx.textAlign = "center";
+      ctx.fillText(control.key, keyX + keyWidth / 2, controlY);
+      ctx.fillStyle = "#c2c3c7"; ctx.textAlign = "left";
+      ctx.fillText(control.label, keyX + keyWidth + 10, controlY);
       ctx.textAlign = "center";
       controlY += 34;
     }
 
     var blink = Math.floor(now / 500) % 2 === 0;
     if (blink) {
-      ctx.font = '700 26px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#c47a5a";
+      ctx.font = pf(24);
+      ctx.fillStyle = "#ffec27";
       ctx.fillText("SPACE / \u30bf\u30c3\u30d7 \u3067\u30b2\u30fc\u30e0\u958b\u59cb\uff01", GW / 2, GH - 30);
     }
+
+    drawScanlines();
   }
 
   function drawHUD() {
@@ -702,78 +942,102 @@ function createRenderer(opts) {
     var seconds = String(Math.floor(state.elapsedTime) % 60).padStart(2, "0");
     var millis = String(Math.floor((state.elapsedTime % 1) * 1000)).padStart(3, "0");
     var timerStr = minutes + ":" + seconds + "." + millis;
-    var timerFontSize = Math.floor(clamp(GW * 0.05, 40, 80));
-    ctx.font = '400 ' + timerFontSize + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
+    var timerFontSize = Math.floor(clamp(GW * 0.045, 36, 64));
+    ctx.font = pf(timerFontSize);
     ctx.textAlign = "left"; ctx.textBaseline = "top";
-    ctx.fillStyle = "#000"; ctx.fillText(timerStr, 22, 16);
+    ctx.fillStyle = "#000"; ctx.fillText(timerStr, 23, 17);
+    ctx.fillStyle = "#ffec27"; ctx.fillText(timerStr, 20, 14);
 
-    if (state.macaronsEaten > 0) {
-      var macaronImg = images["makaron.png"];
-      var macaronY = 90;
-      if (macaronImg) {
-        var scale = 26 / macaronImg.naturalHeight;
-        var mw = macaronImg.naturalWidth * scale;
-        var mh = 26;
-        ctx.font = '700 22px "M PLUS Rounded 1c", sans-serif';
-        var textWidth = ctx.measureText("x" + state.macaronsEaten).width;
-        var sectionWidth = mw + 4 + textWidth + 16;
-        var sectionHeight = mh + 10;
-        roundRect(18, macaronY - 5, sectionWidth, sectionHeight, 8, "#fff");
-        ctx.drawImage(macaronImg, 24, macaronY, mw, mh);
-        ctx.textAlign = "left"; ctx.textBaseline = "middle";
-        ctx.fillStyle = "#000"; ctx.fillText("x" + state.macaronsEaten, 24 + mw + 4, macaronY + mh / 2);
-      }
+    // マカロンゲージ（常時表示、3個でGAME OVER）
+    var macaronImg = images["makaron.png"];
+    var gaugeX = 20;
+    var gaugeY = timerFontSize + 28;
+    var maxMac = 3;
+    var eaten = state.macaronsEaten;
+    var gaugeW = 120;
+    var gaugeH = 18;
+    var fillRatio = clamp(eaten / maxMac, 0, 1);
+
+    // マカロンアイコン
+    if (macaronImg) {
+      var mScale = 22 / macaronImg.naturalHeight;
+      var mw = macaronImg.naturalWidth * mScale;
+      ctx.drawImage(macaronImg, gaugeX, gaugeY - 2, mw, 22);
+      gaugeX += mw + 6;
     }
+
+    // ゲージ枠
+    ctx.fillStyle = "#1d2b53"; ctx.fillRect(gaugeX, gaugeY, gaugeW, gaugeH);
+    ctx.strokeStyle = "#29adff"; ctx.lineWidth = 2; ctx.strokeRect(gaugeX, gaugeY, gaugeW, gaugeH);
+
+    // ゲージ中身（食べた分だけ赤く溜まる）
+    if (fillRatio > 0) {
+      var fillW = Math.floor(gaugeW * fillRatio);
+      var fillColor = eaten >= 2 ? "#ff004d" : "#ffa300";
+      ctx.fillStyle = fillColor; ctx.fillRect(gaugeX + 2, gaugeY + 2, fillW - 4, gaugeH - 4);
+    }
+
+    // 区切り線（3分割）
+    for (var gi = 1; gi < maxMac; gi++) {
+      var gx = gaugeX + Math.floor(gaugeW * gi / maxMac);
+      ctx.fillStyle = "#29adff"; ctx.fillRect(gx - 1, gaugeY, 2, gaugeH);
+    }
+
+    // テキスト
+    ctx.font = pf(14);
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#000"; ctx.fillText(eaten + "/" + maxMac, gaugeX + gaugeW + 8, gaugeY + gaugeH / 2 + 1);
+    ctx.fillStyle = eaten >= 2 ? "#ff004d" : "#c2c3c7";
+    ctx.fillText(eaten + "/" + maxMac, gaugeX + gaugeW + 6, gaugeY + gaugeH / 2);
 
     var keyRows = [
       { key: "\u2191\u2193\u2190\u2192", label: "\u79fb\u52d5" },
-      { key: "R", label: "\u30ea\u30bb\u30c3\u30c8" },
     ];
-    var keyFontSize = Math.floor(clamp(GW * 0.024, 16, 29));
-    var keyCapSize = Math.floor(keyFontSize * 1.6);
-    var rowGap = Math.floor(keyFontSize * 0.375);
-    var itemGap = Math.floor(keyFontSize * 0.4);
-    var rightEdge = GW - 20;
+    var keyFontSize = Math.floor(clamp(GW * 0.02, 14, 22));
+    var rightEdge = GW - 16;
     var keyY = 16;
     ctx.textBaseline = "middle";
 
     for (var ri = 0; ri < keyRows.length; ri++) {
       var row = keyRows[ri];
-      ctx.font = '800 ' + keyFontSize + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
+      ctx.font = pf(keyFontSize);
       var labelWidth = ctx.measureText(row.label).width;
-      ctx.font = '700 ' + keyFontSize + 'px "M PLUS Rounded 1c", sans-serif';
       var keyTextWidth = ctx.measureText(row.key).width;
-      var keyCapWidth = Math.max(keyCapSize, keyTextWidth + Math.floor(keyFontSize * 0.6));
-      var totalWidth = keyCapWidth + itemGap + labelWidth;
+      var keyCapWidth = keyTextWidth + 16;
+      var keyCapHeight = keyFontSize + 12;
+      var totalWidth = keyCapWidth + 8 + labelWidth;
       var startX = rightEdge - totalWidth;
 
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2;
-      ctx.fillStyle = "#fff"; ctx.beginPath();
-      ctx.roundRect(startX, keyY, keyCapWidth, keyCapSize, 6); ctx.fill();
-      ctx.restore();
+      ctx.fillStyle = "#1d2b53"; ctx.fillRect(startX, keyY, keyCapWidth, keyCapHeight);
+      ctx.strokeStyle = "#29adff"; ctx.lineWidth = 2; ctx.strokeRect(startX, keyY, keyCapWidth, keyCapHeight);
 
-      ctx.font = '700 ' + keyFontSize + 'px "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#333"; ctx.textAlign = "center";
-      ctx.fillText(row.key, startX + keyCapWidth / 2, keyY + keyCapSize / 2);
+      ctx.fillStyle = "#fff1e8"; ctx.textAlign = "center";
+      ctx.fillText(row.key, startX + keyCapWidth / 2, keyY + keyCapHeight / 2);
 
-      ctx.font = '800 ' + keyFontSize + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#333"; ctx.textAlign = "left";
-      ctx.fillText(row.label, startX + keyCapWidth + itemGap, keyY + keyCapSize / 2);
+      ctx.fillStyle = "#c2c3c7"; ctx.textAlign = "left";
+      ctx.fillText(row.label, startX + keyCapWidth + 8, keyY + keyCapHeight / 2);
 
-      keyY += keyCapSize + rowGap;
+      keyY += keyCapHeight + 6;
     }
   }
 
   function drawPauseOverlay() {
-    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(0, 0, GW, GH);
-    roundRect(GW / 2 - 180, GH / 2 - 70, 360, 140, 20, "rgba(30,30,50,0.85)", "rgba(255,255,255,0.15)", 2);
+    ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0, 0, GW, GH);
+    // レトロ風パネル
+    var pw = 360, ph = 140;
+    var px = GW / 2 - pw / 2, py = GH / 2 - ph / 2;
+    ctx.fillStyle = "#0f0f23"; ctx.fillRect(px, py, pw, ph);
+    ctx.strokeStyle = "#29adff"; ctx.lineWidth = 4; ctx.strokeRect(px, py, pw, ph);
+
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.font = '400 48px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "#fff"; ctx.fillText("PAUSED", GW / 2, GH / 2 - 15);
-    ctx.font = '700 20px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-    ctx.fillStyle = "rgb(180,200,220)";
-    ctx.fillText("ESC/P: \u518d\u958b\u3000R: \u30ea\u30bb\u30c3\u30c8", GW / 2, GH / 2 + 35);
+    ctx.font = pf(48);
+    ctx.fillStyle = "#000"; ctx.fillText("PAUSED", GW / 2 + 3, GH / 2 - 15 + 3);
+    ctx.fillStyle = "#ffec27"; ctx.fillText("PAUSED", GW / 2, GH / 2 - 15);
+    ctx.font = pf(16);
+    ctx.fillStyle = "#83769c";
+    ctx.fillText("ESC/P: \u518d\u958b", GW / 2, GH / 2 + 35);
+
+    drawScanlines();
   }
 
   function drawClearOverlay(now) {
@@ -790,28 +1054,29 @@ function createRenderer(opts) {
       ctx.globalAlpha = 1;
     }
 
-    var whiteAlpha = clamp(elapsed / 1.0, 0, 0.7);
-    ctx.fillStyle = "rgba(255,248,240," + whiteAlpha + ")";
+    // 暗い背景
+    var bgAlpha = clamp(elapsed / 1.0, 0, 0.9);
+    ctx.fillStyle = "rgba(15,15,35," + bgAlpha + ")";
     ctx.fillRect(0, 0, GW, GH);
 
     if (elapsed < 3.0 && Math.random() < 0.3) spawnConfetti(state, 3);
 
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
+    // CLEAR! テキスト
     var clearAlpha = clamp((elapsed - 1.0) / 0.8, 0, 1);
     if (clearAlpha > 0) {
       var bounceT = clamp((elapsed - 1.0) / 0.8, 0, 1);
       var bounce = bounceT < 0.6 ? (bounceT / 0.6) * 1.15 : bounceT < 0.8 ? 1.15 - (bounceT - 0.6) / 0.2 * 0.15 : 1.0;
       var fontSize = Math.floor(GW * 0.08 * bounce);
       ctx.globalAlpha = clearAlpha;
-      ctx.font = '900 ' + fontSize + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "rgba(200,120,60,0.2)";
-      ctx.fillText("CLEAR!", GW / 2 + 3, GH * 0.22 + 3);
-      ctx.fillStyle = "#e88a60";
-      ctx.fillText("CLEAR!", GW / 2, GH * 0.22);
+      ctx.font = pf(fontSize);
+      ctx.fillStyle = "#000"; ctx.fillText("CLEAR!", GW / 2 + 3, GH * 0.22 + 3);
+      ctx.fillStyle = "#29adff"; ctx.fillText("CLEAR!", GW / 2, GH * 0.22);
       ctx.globalAlpha = 1;
     }
 
+    // キャラ画像
     var imageAlpha = clamp((elapsed - 1.5) / 1.0, 0, 1);
     if (imageAlpha > 0 && images["main.png"]) {
       ctx.globalAlpha = imageAlpha;
@@ -820,6 +1085,7 @@ function createRenderer(opts) {
       ctx.globalAlpha = 1;
     }
 
+    // ゴール画像
     var goalAlpha = clamp((elapsed - 2.5) / 0.8, 0, 1);
     var goalImg = images["goal.png"];
     if (goalAlpha > 0 && goalImg) {
@@ -828,44 +1094,35 @@ function createRenderer(opts) {
       var textAlpha = clamp((elapsed - 3.5) / 0.8, 0, 1);
       if (textAlpha > 0) {
         ctx.globalAlpha = textAlpha;
-        ctx.font = '700 ' + Math.floor(GW * 0.022) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-        ctx.fillStyle = "#e88a60";
+        ctx.font = pf(Math.floor(GW * 0.022));
+        ctx.fillStyle = "#ffa300";
         ctx.fillText("\u3063\u305f\u304f\u3001\u65e9\u304f\u3044\u304f\u305e", EXIT_RECT.x + EXIT_RECT.w / 2 - 60, EXIT_RECT.y - 20);
       }
       ctx.globalAlpha = 1;
     }
 
+    // タイム表示
     var timeAlpha = clamp((elapsed - 3.0) / 1.0, 0, 1);
     if (timeAlpha > 0) {
       ctx.globalAlpha = timeAlpha;
       var min2 = String(Math.floor(state.elapsedTime / 60)).padStart(2, "0");
       var sec2 = String(Math.floor(state.elapsedTime) % 60).padStart(2, "0");
-      ctx.font = '700 26px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#8a6050";
-      ctx.fillText("\u30af\u30ea\u30a2\u30bf\u30a4\u30e0: " + min2 + ":" + sec2, GW / 2, GH * 0.78);
+      ctx.font = pf(28);
+      ctx.fillStyle = "#000"; ctx.fillText("\u30af\u30ea\u30a2\u30bf\u30a4\u30e0: " + min2 + ":" + sec2, GW / 2 + 2, GH * 0.78 + 2);
+      ctx.fillStyle = "#ff004d"; ctx.fillText("\u30af\u30ea\u30a2\u30bf\u30a4\u30e0: " + min2 + ":" + sec2, GW / 2, GH * 0.78);
 
       if (state.bestTime > 0) {
         var bMin = String(Math.floor(state.bestTime / 60)).padStart(2, "0");
         var bSec = String(Math.floor(state.bestTime) % 60).padStart(2, "0");
-        ctx.font = '700 18px "M PLUS Rounded 1c", sans-serif';
-        ctx.fillStyle = "#c4956a";
+        ctx.font = pf(18);
+        ctx.fillStyle = "#ffa300";
         ctx.fillText("\u30d9\u30b9\u30c8: " + bMin + ":" + bSec, GW / 2, GH * 0.78 + 35);
       }
       ctx.globalAlpha = 1;
     }
 
-    var retryAlpha = clamp((elapsed - 5.0) / 1.0, 0, 1);
-    if (retryAlpha > 0) {
-      ctx.globalAlpha = retryAlpha * 0.7;
-      ctx.font = '700 ' + Math.floor(GW * 0.02) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#a08070";
-      ctx.fillText("SPACE / \u30bf\u30c3\u30d7: \u3082\u3046\u4e00\u5ea6\u3000R: \u30ea\u30bb\u30c3\u30c8", GW / 2, GH - 35);
+    if (bgAlpha > 0.5) drawScanlines();
 
-      ctx.font = '700 ' + Math.floor(GW * 0.016) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#888";
-      ctx.fillText("ESC: \u30c8\u30c3\u30d7\u306b\u623b\u308b", GW / 2, GH - 10);
-      ctx.globalAlpha = 1;
-    }
   }
 
   function drawGameOverOverlay(now) {
@@ -882,12 +1139,14 @@ function createRenderer(opts) {
       ctx.globalAlpha = 1;
     }
 
-    var darkAlpha = clamp(elapsed / 1.5, 0, 0.85);
-    ctx.fillStyle = "rgba(0,0,0," + darkAlpha + ")";
+    // 暗い背景
+    var darkAlpha = clamp(elapsed / 1.5, 0, 0.92);
+    ctx.fillStyle = "rgba(15,15,35," + darkAlpha + ")";
     ctx.fillRect(0, 0, GW, GH);
 
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
+    // GAME OVER 画像
     var goAlpha = clamp((elapsed - 2.0) / 1.0, 0, 1);
     var goImg = images["gameover-image.png"];
     if (goAlpha > 0 && goImg) {
@@ -899,13 +1158,14 @@ function createRenderer(opts) {
       var textAlpha = clamp((elapsed - 3.5) / 1.0, 0, 1);
       if (textAlpha > 0) {
         ctx.globalAlpha = textAlpha;
-        ctx.font = '900 ' + Math.floor(GW * 0.033) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", "Hiragino Kaku Gothic ProN", sans-serif';
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText("\u98df\u3079\u3059\u304e\u305f\u3061\u3083\u3080\uff5e", GW / 2, GH / 2 - h / 2 - 55);
+        ctx.font = pf(Math.floor(GW * 0.033));
+        ctx.fillStyle = "#000"; ctx.fillText("\u98df\u3079\u3059\u304e\u305f\u3061\u3083\u3080\uff5e", GW / 2 + 2, GH / 2 - h / 2 - 53);
+        ctx.fillStyle = "#ff004d"; ctx.fillText("\u98df\u3079\u3059\u304e\u305f\u3061\u3083\u3080\uff5e", GW / 2, GH / 2 - h / 2 - 55);
       }
       ctx.globalAlpha = 1;
     }
 
+    // ゴール画像
     var goalImg = images["goal.png"];
     var goalAlpha = clamp((elapsed - 5.0) / 0.8, 0, 1);
     if (goalAlpha > 0 && goalImg) {
@@ -915,25 +1175,14 @@ function createRenderer(opts) {
       var messageAlpha = clamp((elapsed - 6.0) / 1.0, 0, 1);
       if (messageAlpha > 0) {
         ctx.globalAlpha = messageAlpha;
-        ctx.font = '400 ' + Math.floor(GW * 0.022) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-        ctx.fillStyle = "#ffffff";
+        ctx.font = pf(Math.floor(GW * 0.022));
+        ctx.fillStyle = "#83769c";
         ctx.fillText("\u30fb\u30fb\u30fb\u305f\u304f\u3002\u304a\u307e\u3048\u306a\u3042", EXIT_RECT.x + EXIT_RECT.w / 2 - 70, EXIT_RECT.y - 20);
       }
       ctx.globalAlpha = 1;
     }
 
-    var retryAlpha = clamp((elapsed - 7.5) / 1.0, 0, 1);
-    if (retryAlpha > 0) {
-      ctx.globalAlpha = retryAlpha * 0.7;
-      ctx.font = '700 ' + Math.floor(GW * 0.02) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#ccc";
-      ctx.fillText("SPACE / \u30bf\u30c3\u30d7 / R\u30ad\u30fc\u3067\u30ea\u30c8\u30e9\u30a4", GW / 2, GH - 35);
-
-      ctx.font = '700 ' + Math.floor(GW * 0.016) + 'px "Zen Maru Gothic", "M PLUS Rounded 1c", sans-serif';
-      ctx.fillStyle = "#888";
-      ctx.fillText("ESC: \u30c8\u30c3\u30d7\u306b\u623b\u308b", GW / 2, GH - 10);
-      ctx.globalAlpha = 1;
-    }
+    if (darkAlpha > 0.5) drawScanlines();
   }
 
   function draw(now) {
@@ -956,9 +1205,13 @@ function createRenderer(opts) {
     if (state.gameState === "title") { drawTitleScreen(now); return; }
     if (state.gameState === "howto") { drawHowtoScreen(now); return; }
 
-    var grad = ctx.createLinearGradient(0, 0, 0, GH);
-    grad.addColorStop(0, "#f8e8d8"); grad.addColorStop(1, "#fff5ee");
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, GW, GH);
+    // レトロ風背景 + グリッド
+    ctx.fillStyle = "#1d2b53"; ctx.fillRect(0, 0, GW, GH);
+    ctx.strokeStyle = "rgba(41,173,255,0.08)"; ctx.lineWidth = 1;
+    for (var gx = 0; gx < GW; gx += 16) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, GH); ctx.stroke(); }
+    for (var gy = 0; gy < GH; gy += 16) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(GW, gy); ctx.stroke(); }
+
+    if (state.gameState !== "gameover") drawHUD();
 
     for (var mi = 0; mi < state.macarons.length; mi++) {
       var macaron = state.macarons[mi];
@@ -1010,7 +1263,6 @@ function createRenderer(opts) {
     }
 
     drawParticles(state, ctx);
-    if (state.gameState !== "gameover") drawHUD();
 
     if (state.gameState === "paused") drawPauseOverlay();
     else if (state.gameState === "cleared") drawClearOverlay(now);
@@ -1031,18 +1283,16 @@ function createGame(opts) {
     if (state.gameState === "title") { if (code === "Space") state.gameState = "howto"; return; }
     if (state.gameState === "howto") { if (code === "Space") resetGame(); return; }
     if (state.gameState === "playing") {
-      if (code === "KeyR") resetGame();
-      else if (code === "Escape" || code === "KeyP") state.gameState = "paused";
+      if (code === "Escape" || code === "KeyP") state.gameState = "paused";
       return;
     }
     if (state.gameState === "paused") {
       if (code === "Escape" || code === "KeyP") state.gameState = "playing";
-      else if (code === "KeyR") resetGame();
       return;
     }
     if (state.gameState === "cleared" || state.gameState === "gameover") {
-      if (code === "Space" || code === "KeyR") resetGame();
-      else if (code === "Escape") window.location.href = "../";
+      if (document.getElementById('result-screen').classList.contains('active')) return;
+      if (code === "Space" || code === "Escape") window.location.href = "../";
     }
   }
 
@@ -1216,7 +1466,9 @@ function createGame(opts) {
             if (state.macaronsEaten >= 3) {
               state.gameState = "gameover"; state.attached = false;
               audio.stopCrying(); state.screenShake = 0;
-              state.gameOverTime = performance.now(); return;
+              state.gameOverTime = performance.now();
+              setTimeout(function() { if (opts.onGameOver) opts.onGameOver(state.elapsedTime); }, 7000);
+              return;
             }
           }
         }
@@ -1286,6 +1538,7 @@ function createGame(opts) {
         localStorage.setItem("npochamu_best", state.bestTime.toString());
       }
       audio.playClear(); spawnConfetti(state, 60);
+      setTimeout(function() { if (opts.onClear) opts.onClear(state.elapsedTime); }, 4000);
     }
 
     updateParticles(state, dt);
@@ -1300,6 +1553,203 @@ function createGame(opts) {
   var canvas = document.getElementById("c");
   var ctx = canvas.getContext("2d");
   var state = createState();
+
+  // --- Ranking system ---
+  var RANK_MAX = 10;
+  var RANK_KEY = 'npochamu_ranking';
+  var RANK_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var RANK_BAD = ['SEX','FUC','FUK','FCK','DIK','DIE','ASS','FAG','GAY','NIG','COK','CUM','TIT','VAG','WTF','KKK','SUK','SUC','PUS'];
+  var rankSlotValues = [0, 0, 0];
+  var rankActiveSlot = 0;
+  var rankEntering = false;
+  var rankScore = 0;
+  var cachedRank = [];
+
+  var resultScreen = document.getElementById('result-screen');
+  var rankNameArea = document.getElementById('name-input-area-r');
+  var rankListArea = document.getElementById('ranking-list-area');
+  var rankListOl = document.getElementById('ranking-list-ol');
+  var rankSlots = document.querySelectorAll('.rank-slot');
+  var rankSubmitBtn = document.getElementById('rank-submit');
+
+  function generateDummyRanking() {
+    var names = [
+      'ACE','BOB','CAT','DAN','ELI','FOX','GUS','HAL','IAN','JAY',
+      'KAI','LEO','MAX','NEO','OAK','PAT','RAY','SAM','TOM','VIC',
+      'WAL','YUI','ZAK','AMI','BEN','CUP','DOC','EVE','FIN','GIN',
+      'HOP','ICE','JOE','KEN','LUC','MAO','NED','OWL','PEN','RIN',
+      'SKY','TAO','UMI','VAN','WIZ','YAM','ZEN','APE','BAT','COW'
+    ];
+    var entries = [];
+    for (var i = 0; i < names.length; i++) {
+      var base = 15 + (i / names.length) * 120;
+      var jitter = (Math.sin(i * 137.5) * 0.5 + 0.5) * 10;
+      entries.push({ name: names[i], score: parseFloat((base + jitter).toFixed(1)) });
+    }
+    entries.sort(function(a, b) { return a.score - b.score; });
+    return entries;
+  }
+
+  function loadRank() {
+    if (cachedRank.length > 0) return cachedRank;
+    try {
+      var raw = localStorage.getItem(RANK_KEY);
+      cachedRank = raw ? JSON.parse(raw) : [];
+    } catch(e) { cachedRank = []; }
+    if (cachedRank.length === 0) cachedRank = generateDummyRanking();
+    return cachedRank;
+  }
+
+  function saveRank(r) {
+    cachedRank = r;
+    localStorage.setItem(RANK_KEY, JSON.stringify(r));
+  }
+
+  function isHighScore(score) {
+    var r = loadRank();
+    if (r.length < RANK_MAX) return true;
+    return score < r[RANK_MAX - 1].score;
+  }
+
+  function addRankScore(name, score) {
+    var r = loadRank().slice();
+    r.push({ name: name, score: score });
+    r.sort(function(a, b) { return a.score - b.score; });
+    saveRank(r);
+    return r;
+  }
+
+  function formatTime(s) {
+    var min = String(Math.floor(s / 60)).padStart(2, '0');
+    var sec = String(Math.floor(s) % 60).padStart(2, '0');
+    return min + ':' + sec;
+  }
+
+  function updateRankSlots() {
+    rankSlots.forEach(function(el, i) {
+      el.textContent = RANK_LETTERS[rankSlotValues[i]];
+      el.classList.toggle('active', i === rankActiveSlot);
+    });
+  }
+
+  function getRankName() {
+    return rankSlotValues.map(function(i) { return RANK_LETTERS[i]; }).join('');
+  }
+
+  function showRanking(score) {
+    rankScore = score;
+    rankEntering = true;
+
+    // Set result info
+    var min = String(Math.floor(score / 60)).padStart(2, '0');
+    var sec = String(Math.floor(score) % 60).padStart(2, '0');
+    document.getElementById('result-time').textContent = 'クリアタイム: ' + min + ':' + sec;
+
+    var currentRanks = loadRank();
+    var myRank = currentRanks.filter(function(e) { return e.score < score; }).length + 1;
+    document.getElementById('result-rank-label').textContent = myRank + '位';
+
+    if (isHighScore(score)) {
+      rankNameArea.classList.add('active');
+      rankListArea.classList.remove('active');
+      rankSlotValues = [0, 0, 0];
+      rankActiveSlot = 0;
+      updateRankSlots();
+    } else {
+      rankNameArea.classList.remove('active');
+      addRankScore('-', score);
+      displayRank(loadRank());
+    }
+
+    resultScreen.classList.add('active');
+  }
+
+  function submitRankName() {
+    var name = getRankName();
+    if (RANK_BAD.indexOf(name) !== -1) {
+      rankSlots.forEach(function(el) { el.style.color = '#ff4444'; });
+      setTimeout(function() { rankSlots.forEach(function(el) { el.style.color = ''; }); }, 400);
+      return;
+    }
+    var r = addRankScore(name, rankScore);
+    rankNameArea.classList.remove('active');
+    displayRank(r);
+  }
+
+  function displayRank(rankings) {
+    rankListArea.classList.add('active');
+    rankListOl.innerHTML = '';
+    var top = rankings.slice(0, RANK_MAX);
+    var highlighted = false;
+    for (var i = 0; i < top.length; i++) {
+      var li = document.createElement('li');
+      li.textContent = (i + 1) + '位  ' + top[i].name.padEnd(3, '.') + '  ' + formatTime(top[i].score);
+      if (!highlighted && Math.abs(top[i].score - rankScore) < 0.01) {
+        li.classList.add('hl');
+        highlighted = true;
+      }
+      rankListOl.appendChild(li);
+    }
+  }
+
+  function hideRanking() {
+    resultScreen.classList.remove('active');
+    rankNameArea.classList.remove('active');
+    rankListArea.classList.remove('active');
+    rankEntering = false;
+  }
+
+  rankSubmitBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    submitRankName();
+  });
+
+  rankSlots.forEach(function(el, i) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      rankActiveSlot = i;
+      rankSlotValues[i] = (rankSlotValues[i] + 1) % RANK_LETTERS.length;
+      updateRankSlots();
+    });
+  });
+
+  loadRank();
+
+  document.addEventListener('keydown', function(e) {
+    if (!rankEntering) return;
+    var nameVisible = rankNameArea.classList.contains('active');
+    if (nameVisible) {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault(); e.stopPropagation();
+        rankSlotValues[rankActiveSlot] = (rankSlotValues[rankActiveSlot] + 1) % RANK_LETTERS.length;
+        updateRankSlots();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault(); e.stopPropagation();
+        rankSlotValues[rankActiveSlot] = (rankSlotValues[rankActiveSlot] - 1 + RANK_LETTERS.length) % RANK_LETTERS.length;
+        updateRankSlots();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault(); e.stopPropagation();
+        rankActiveSlot = Math.min(rankActiveSlot + 1, 2);
+        updateRankSlots();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault(); e.stopPropagation();
+        rankActiveSlot = Math.max(rankActiveSlot - 1, 0);
+        updateRankSlots();
+      } else if (e.key === 'Enter') {
+        e.preventDefault(); e.stopPropagation();
+        submitRankName();
+      }
+    } else {
+      if (e.code === 'Space' || e.key === 'Enter' || e.code === 'Escape') {
+        e.preventDefault(); e.stopPropagation();
+        window.location.href = '../';
+      }
+    }
+  }, true);  // use capture to intercept before game handlers
+
+  resultScreen.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+  resultScreen.addEventListener('click', function(e) { e.stopPropagation(); });
+
   var assets = createAssets();
   var audio = createAudioController(state);
   var game = null;
@@ -1310,18 +1760,33 @@ function createGame(opts) {
     onResetGame: function() { if (game) game.resetGame(); },
   });
 
-  game = createGame({ state: state, images: assets.images, audio: audio, input: input });
+  function showGameOver(score) {
+    rankScore = score;
+    rankEntering = true;
+    var min = String(Math.floor(score / 60)).padStart(2, '0');
+    var sec = String(Math.floor(score) % 60).padStart(2, '0');
+    document.getElementById('result-time').textContent = 'タイム: ' + min + ':' + sec;
+    document.getElementById('result-rank-label').textContent = 'GAME OVER';
+    rankNameArea.classList.remove('active');
+    rankListArea.classList.remove('active');
+    displayRank(loadRank());
+    resultScreen.classList.add('active');
+  }
+
+  game = createGame({ state: state, images: assets.images, audio: audio, input: input, onClear: showRanking, onGameOver: showGameOver });
 
   var renderer = createRenderer({ canvas: canvas, ctx: ctx, state: state, images: assets.images });
 
   window.addEventListener("resize", renderer.resize);
   renderer.resize();
 
+  var homeBtnEl = document.querySelector('.home-btn');
   function loop(timestamp) {
     var dt = Math.min((timestamp - state.lastTime) / 1000, 0.05);
     state.lastTime = timestamp;
     game.update(dt);
     renderer.draw(timestamp);
+    homeBtnEl.classList.toggle('visible', state.gameState === 'title');
     requestAnimationFrame(loop);
   }
 

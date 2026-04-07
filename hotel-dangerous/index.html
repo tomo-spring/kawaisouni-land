@@ -42,17 +42,22 @@
         position: fixed;
         inset: 0;
         pointer-events: none;
-        color: #000000;
+        color: #fff1e8;
+        font-family: 'Courier New', monospace;
+        image-rendering: pixelated;
       }
 
       .timer {
         position: absolute;
-        top: 28px;
+        top: 68px;
         left: 32px;
         margin: 0;
-        font-size: 3.5rem;
+        font-size: 2.8rem;
+        font-weight: 900;
         line-height: 0.92;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.06em;
+        color: #ffec27;
+        text-shadow: 3px 3px 0 #000;
       }
 
       .controls {
@@ -62,34 +67,40 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
-        font-size: 1.4rem;
+        font-size: 1.2rem;
         font-weight: 900;
-        color: #555;
+        color: #c2c3c7;
+        text-shadow: 2px 2px 0 #000;
       }
 
       .surrender-btn {
-        position: absolute;
-        top: 28px;
-        left: 300px;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        border: 3px solid #991b1b;
-        background: #b91c1c;
-        color: #fff;
-        font-family: inherit;
-        font-size: 0.75rem;
+        position: fixed;
+        top: 16px;
+        left: 150px;
+        z-index: 50;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
         font-weight: 900;
+        padding: 6px 12px;
+        background: #7e2553;
+        color: #c2c3c7;
+        border: 3px solid #ff004d;
         cursor: pointer;
         pointer-events: auto;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
-        transition: transform 0.1s, box-shadow 0.1s;
-        line-height: 1.1;
+        text-shadow: 1px 1px 0 #000;
+        box-shadow: 3px 3px 0 #000;
+        transition: color 0.2s, border-color 0.2s;
+        border-radius: 0;
+      }
+
+      .surrender-btn:hover {
+        color: #ffec27;
+        border-color: #ffec27;
       }
 
       .surrender-btn:active {
-        transform: scale(0.93);
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        transform: translateY(2px);
+        box-shadow: 1px 1px 0 #000;
       }
 
       .controls p {
@@ -105,20 +116,232 @@
         justify-content: center;
         min-width: 1.6em;
         height: 1.6em;
-        background: #fff;
-        border: 2px solid #aaa;
-        border-bottom: 4px solid #999;
-        border-radius: 6px;
-        color: #333;
-        font-family: inherit;
+        background: #1d2b53;
+        border: 3px solid #29adff;
+        color: #fff1e8;
+        font-family: 'Courier New', monospace;
         font-size: 1em;
         font-weight: 900;
-        text-shadow: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        text-shadow: 1px 1px 0 #000;
+        box-shadow: 3px 3px 0 #000;
+        border-radius: 0;
+      }
+
+      /* Result screen - retro game style */
+      #result-screen {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 20;
+        background: #1d2b53;
+        background-image: radial-gradient(circle at 50% 50%, #29366f 0%, #1d2b53 70%);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-family: 'Courier New', monospace;
+      }
+      #result-screen.active { display: flex; }
+      .result-panel {
+        background: #0f0f23;
+        border: 6px solid #29adff;
+        padding: 36px 50px;
+        max-width: 700px;
+        width: 85%;
+        text-align: center;
+        box-shadow: 8px 8px 0 #000, 0 0 30px rgba(41,173,255,0.3);
+        position: relative;
+      }
+      .result-panel::before,
+      .result-panel::after {
+        content: '';
+        position: absolute;
+        width: 12px; height: 12px;
+        background: #29adff;
+      }
+      .result-panel::before { top: -3px; left: -3px; }
+      .result-panel::after { top: -3px; right: -3px; }
+      .result-panel h2 {
+        font-size: 42px;
+        font-weight: 900;
+        color: #29adff;
+        margin: 0 0 8px;
+        text-shadow: 2px 2px 0 #000;
+      }
+      .result-time {
+        font-size: 36px;
+        font-weight: bold;
+        color: #ff004d;
+        margin-bottom: 8px;
+        text-shadow: 2px 2px 0 #000;
+      }
+      .result-rank-label {
+        font-size: 24px;
+        color: #ffec27;
+        margin-bottom: 16px;
+        text-shadow: 2px 2px 0 #000;
+      }
+      #name-input-area-r {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      #name-input-area-r.active { display: flex; }
+      #name-input-area-r h3 {
+        font-size: 32px;
+        font-weight: 900;
+        color: #ffa300;
+        margin: 0 0 8px;
+        text-shadow: 2px 2px 0 #000;
+        animation: rank-blink-text 0.8s infinite;
+      }
+      @keyframes rank-blink-text {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      #name-input-area-r .rank-subtitle {
+        font-size: 18px;
+        color: #c2c3c7;
+        margin-bottom: 12px;
+        text-shadow: 1px 1px 0 #000;
+      }
+      .rank-slots {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-bottom: 8px;
+      }
+      .rank-slot {
+        font-family: 'Courier New', monospace;
+        font-size: 40px;
+        font-weight: 900;
+        width: 56px;
+        height: 60px;
+        line-height: 60px;
+        text-align: center;
+        border: 4px solid #29adff;
+        background: #1d2b53;
+        color: #fff1e8;
+        text-shadow: 1px 1px 0 #000;
+      }
+      .rank-slot.active {
+        border-color: #ffec27;
+        box-shadow: 0 0 10px rgba(255,236,39,0.5);
+        animation: rank-blink 0.6s infinite;
+      }
+      @keyframes rank-blink {
+        0%, 100% { border-color: #ffec27; }
+        50% { border-color: #29adff; }
+      }
+      .rank-hint {
+        font-size: 13px;
+        color: #83769c;
+        margin-bottom: 12px;
+        text-shadow: 1px 1px 0 #000;
+      }
+      .rank-btn {
+        font-family: 'Courier New', monospace;
+        font-size: 22px;
+        font-weight: bold;
+        padding: 8px 36px;
+        background: #00e436;
+        color: #0f0f23;
+        border: 4px solid #008751;
+        cursor: pointer;
+        box-shadow: 4px 4px 0 #000;
+        transition: transform 0.1s;
+      }
+      .rank-btn:hover { transform: scale(1.05); }
+      .rank-btn:active {
+        transform: translateY(2px);
+        box-shadow: 2px 2px 0 #000;
+      }
+      #ranking-list-area {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      #ranking-list-area.active { display: flex; }
+      #ranking-list-area h4 {
+        font-size: 28px;
+        color: #ffa300;
+        margin: 0 0 8px;
+        text-shadow: 2px 2px 0 #000;
+      }
+      #ranking-list-area ol {
+        list-style: none;
+        padding: 0;
+        margin: 0 auto 12px;
+        text-align: center;
+      }
+      #ranking-list-area li {
+        font-family: 'Courier New', monospace;
+        font-size: 20px;
+        color: #c2c3c7;
+        padding: 3px 0;
+        text-shadow: 1px 1px 0 #000;
+      }
+      #ranking-list-area li.hl {
+        color: #ffec27;
+        font-weight: bold;
+        animation: rank-blink-text 0.6s infinite;
+      }
+      .result-home {
+        display: inline-block;
+        font-family: 'Courier New', monospace;
+        font-size: 20px;
+        padding: 8px 24px;
+        background: transparent;
+        color: #5f574f;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        text-shadow: 1px 1px 0 #000;
+        animation: rank-blink-text 1.2s infinite;
+      }
+      .result-home:hover {
+        color: #ffec27;
+      }
+
+      .home-btn {
+        position: fixed;
+        top: 16px;
+        left: 32px;
+        z-index: 50;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        font-weight: 900;
+        padding: 6px 12px;
+        background: #1d2b53;
+        color: #c2c3c7;
+        border: 3px solid #29adff;
+        cursor: pointer;
+        text-decoration: none;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        text-shadow: 1px 1px 0 #000;
+        box-shadow: 3px 3px 0 #000;
+        pointer-events: auto;
+        transition: color 0.2s, border-color 0.2s;
+        border-radius: 0;
+      }
+      .home-btn.visible {
+        display: flex;
+      }
+      .home-btn:hover {
+        color: #ffec27;
+        border-color: #ffec27;
+      }
+      .home-btn:active {
+        transform: translateY(2px);
+        box-shadow: 1px 1px 0 #000;
       }
     </style>
   </head>
   <body>
+    <a href="../" class="home-btn">← ホームへ</a>
     <canvas id="game"></canvas>
     <div id="end-img-overlay" style="pointer-events:none;opacity:0;transition:opacity 4s ease;">
       <div style="position:fixed;right:16vw;bottom:8vh;display:flex;flex-direction:column;align-items:center;z-index:9;">
@@ -143,6 +366,31 @@
         <p><kbd>W</kbd> 後ろの足を後ろへ</p>
         <p><kbd>O</kbd> 前の足を後ろへ</p>
         <p><kbd>P</kbd> 前の足を前へ</p>
+      </div>
+    </div>
+    <div id="result-screen">
+      <div class="result-panel">
+        <h2 id="result-title">- CLEAR! -</h2>
+        <div class="result-time" id="result-time"></div>
+        <div class="result-rank-label" id="result-rank-label"></div>
+
+        <div id="name-input-area-r">
+          <h3>ハイスコア!</h3>
+          <div class="rank-subtitle">名前を入力してください</div>
+          <div class="rank-slots">
+            <div class="rank-slot active" data-index="0">A</div>
+            <div class="rank-slot" data-index="1">A</div>
+            <div class="rank-slot" data-index="2">A</div>
+          </div>
+          <div class="rank-hint">↑↓: 文字選択　←→: 移動　Enter: 決定</div>
+          <button class="rank-btn" id="rank-submit">決定</button>
+        </div>
+
+        <div id="ranking-list-area">
+          <h4>- ランキング -</h4>
+          <ol id="ranking-list-ol"></ol>
+        </div>
+
       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
@@ -175,6 +423,194 @@ function formatTimer(totalSeconds) {
     .padStart(3, "0");
   return `${minutes}:${seconds}.${millis}`;
 }
+
+// --- Ranking system ---
+const RANK_MAX = 10;
+const RANK_KEY = 'hotel_dangerous_ranking';
+const RANK_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const RANK_BAD = ['SEX','FUC','FUK','FCK','DIK','DIE','ASS','FAG','GAY','NIG','COK','CUM','TIT','VAG','WTF','KKK','SUK','SUC','PUS'];
+let rankSlotValues = [0, 0, 0];
+let rankActiveSlot = 0;
+let rankEntering = false;
+let rankScore = 0;
+let cachedRank = [];
+
+const resultScreen = document.getElementById('result-screen');
+const rankNameArea = document.getElementById('name-input-area-r');
+const rankListArea = document.getElementById('ranking-list-area');
+const rankListOl = document.getElementById('ranking-list-ol');
+const rankSlots = document.querySelectorAll('.rank-slot');
+const rankSubmitBtn = document.getElementById('rank-submit');
+
+function generateDummyRanking() {
+  const names = [
+    'ACE','BOB','CAT','DAN','ELI','FOX','GUS','HAL','IAN','JAY',
+    'KAI','LEO','MAX','NEO','OAK','PAT','RAY','SAM','TOM','VIC',
+    'WAL','YUI','ZAK','AMI','BEN','CUP','DOC','EVE','FIN','GIN',
+    'HOP','ICE','JOE','KEN','LUC','MAO','NED','OWL','PEN','RIN',
+    'SKY','TAO','UMI','VAN','WIZ','YAM','ZEN','APE','BAT','COW'
+  ];
+  const entries = [];
+  for (let i = 0; i < names.length; i++) {
+    const base = 10 + (i / names.length) * 180;
+    const jitter = (Math.sin(i * 137.5) * 0.5 + 0.5) * 15;
+    entries.push({ name: names[i], score: parseFloat((base + jitter).toFixed(3)) });
+  }
+  entries.sort((a, b) => a.score - b.score);
+  return entries;
+}
+
+function loadRank() {
+  if (cachedRank.length > 0) return cachedRank;
+  try {
+    const raw = localStorage.getItem(RANK_KEY);
+    cachedRank = raw ? JSON.parse(raw) : [];
+  } catch { cachedRank = []; }
+  if (cachedRank.length === 0) cachedRank = generateDummyRanking();
+  return cachedRank;
+}
+
+function saveRank(r) {
+  cachedRank = r;
+  localStorage.setItem(RANK_KEY, JSON.stringify(r));
+}
+
+function isHighScoreRank(score) {
+  const r = loadRank();
+  if (r.length < RANK_MAX) return true;
+  return score < r[RANK_MAX - 1].score;
+}
+
+function addRankScore(name, score) {
+  const r = loadRank().slice();
+  r.push({ name, score });
+  r.sort((a, b) => a.score - b.score);
+  saveRank(r);
+  return r;
+}
+
+function updateRankSlots() {
+  rankSlots.forEach((el, i) => {
+    el.textContent = RANK_LETTERS[rankSlotValues[i]];
+    el.classList.toggle('active', i === rankActiveSlot);
+  });
+}
+
+function getRankName() {
+  return rankSlotValues.map(i => RANK_LETTERS[i]).join('');
+}
+
+function showRanking(score) {
+  rankScore = score;
+  rankEntering = true;
+
+  document.getElementById('result-title').textContent = '- CLEAR! -';
+  document.getElementById('result-time').textContent = '記録: ' + formatTimer(score);
+
+  const currentRanks = loadRank();
+  const myRank = currentRanks.filter(e => e.score < score).length + 1;
+  document.getElementById('result-rank-label').textContent = myRank + '位';
+
+  if (isHighScoreRank(score)) {
+    rankNameArea.classList.add('active');
+    rankListArea.classList.remove('active');
+    rankSlotValues = [0, 0, 0];
+    rankActiveSlot = 0;
+    updateRankSlots();
+  } else {
+    rankNameArea.classList.remove('active');
+    addRankScore('-', score);
+    displayRank(loadRank());
+  }
+
+  resultScreen.classList.add('active');
+}
+
+function submitRankName() {
+  const name = getRankName();
+  if (RANK_BAD.includes(name)) {
+    rankSlots.forEach(el => { el.style.color = '#ff4444'; });
+    setTimeout(() => rankSlots.forEach(el => { el.style.color = ''; }), 400);
+    return;
+  }
+  const r = addRankScore(name, rankScore);
+  rankNameArea.classList.remove('active');
+  displayRank(r);
+}
+
+function displayRank(rankings) {
+  rankListArea.classList.add('active');
+  rankListOl.innerHTML = '';
+  const top = rankings.slice(0, RANK_MAX);
+  let highlighted = false;
+  top.forEach((entry, i) => {
+    const li = document.createElement('li');
+    li.textContent = `${i+1}位  ${entry.name.padEnd(3, '.')}  ${formatTimer(entry.score)}`;
+    if (!highlighted && Math.abs(entry.score - rankScore) < 0.001) {
+      li.classList.add('hl');
+      highlighted = true;
+    }
+    rankListOl.appendChild(li);
+  });
+}
+
+function hideRanking() {
+  resultScreen.classList.remove('active');
+  rankNameArea.classList.remove('active');
+  rankListArea.classList.remove('active');
+  rankEntering = false;
+}
+
+rankSubmitBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  submitRankName();
+});
+
+rankSlots.forEach((el, i) => {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    rankActiveSlot = i;
+    rankSlotValues[i] = (rankSlotValues[i] + 1) % RANK_LETTERS.length;
+    updateRankSlots();
+  });
+});
+
+resultScreen.addEventListener('pointerdown', (e) => e.stopPropagation());
+resultScreen.addEventListener('click', (e) => e.stopPropagation());
+
+document.addEventListener('keydown', (e) => {
+  if (!rankEntering) return;
+  const nameVisible = rankNameArea.classList.contains('active');
+  if (nameVisible) {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault(); e.stopPropagation();
+      rankSlotValues[rankActiveSlot] = (rankSlotValues[rankActiveSlot] + 1) % RANK_LETTERS.length;
+      updateRankSlots();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault(); e.stopPropagation();
+      rankSlotValues[rankActiveSlot] = (rankSlotValues[rankActiveSlot] - 1 + RANK_LETTERS.length) % RANK_LETTERS.length;
+      updateRankSlots();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault(); e.stopPropagation();
+      rankActiveSlot = Math.min(rankActiveSlot + 1, 2);
+      updateRankSlots();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault(); e.stopPropagation();
+      rankActiveSlot = Math.max(rankActiveSlot - 1, 0);
+      updateRankSlots();
+    } else if (e.key === 'Enter') {
+      e.preventDefault(); e.stopPropagation();
+      submitRankName();
+    }
+  } else {
+    if (e.code === 'Space' || e.key === 'Enter' || e.code === 'Escape') {
+      e.preventDefault(); e.stopPropagation();
+      window.location.href = '../';
+    }
+  }
+}, true);
+
+loadRank();
 
 function isDrawableReady(image) {
   if (!image) {
@@ -1325,6 +1761,8 @@ function drawLoseScreen(ctx) {
     endOverlay.style.opacity = "1";
   }
 
+  const pixelFont = (size) => `900 ${size}px "Courier New", monospace`;
+
   const msgAlpha = Math.min(Math.max((elapsed - 1.7) / 4.0, 0), 1);
   if (msgAlpha > 0) {
     ctx.save();
@@ -1332,10 +1770,14 @@ function drawLoseScreen(ctx) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.fillStyle = "#cccccc";
-    ctx.font = `bold ${Math.floor(viewport.width * 0.022)}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+    ctx.font = pixelFont(Math.floor(viewport.width * 0.022));
 
     if (state.surrendered) {
+      ctx.fillStyle = "#ff004d";
+      ctx.shadowColor = "#000";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
       ctx.fillText("ホテルの出勤に遅刻してしまった…", leftX, cy - 30);
 
       const subAlpha = Math.min(Math.max((elapsed - 3.2) / 4.0, 0), 1);
@@ -1346,6 +1788,11 @@ function drawLoseScreen(ctx) {
       ctx.globalAlpha = dotsAlpha;
       ctx.fillText("お客様が怒っている…", leftX, cy + 70);
     } else {
+      ctx.fillStyle = "#ff004d";
+      ctx.shadowColor = "#000";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
       ctx.fillText("あなたのせいで", leftX, cy - 30);
 
       const subAlpha = Math.min(Math.max((elapsed - 3.2) / 4.0, 0), 1);
@@ -1360,24 +1807,31 @@ function drawLoseScreen(ctx) {
     ctx.restore();
   }
 
+  // スキャンラインエフェクト
+  if (blackAlpha > 0.5) {
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = "#fff";
+    for (let sl = 0; sl < viewport.height; sl += 4) {
+      ctx.fillRect(0, sl, viewport.width, 1);
+    }
+    ctx.restore();
+  }
+
   const retryFadeIn = Math.min(Math.max((elapsed - 7.0) / 3.0, 0), 1);
   state.retryReady = retryFadeIn > 0;
   if (retryFadeIn > 0) {
     ctx.save();
-    const blink = retryFadeIn < 1 ? retryFadeIn : 0.3 + 0.3 * Math.sin(elapsed * 3);
-    ctx.globalAlpha = blink;
-    ctx.fillStyle = "#cccccc";
-    ctx.font = `22px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
+    const blink = Math.floor(elapsed * 2) % 2 === 0 ? 1 : 0.3;
+    ctx.globalAlpha = retryFadeIn * blink;
+    ctx.fillStyle = "#ffec27";
+    ctx.shadowColor = "#000";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.font = pixelFont(20);
     ctx.textAlign = "center";
-    ctx.fillText("スペースキーで最初に戻る", leftX, cy + 220);
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = blink;
-    ctx.fillStyle = "#888888";
-    ctx.font = `18px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.fillText("Escキーでトップに戻る", leftX, cy + 260);
+    ctx.fillText("SPACE / ESC: ホームに戻る", leftX, cy + 220);
     ctx.restore();
   }
 }
@@ -1398,40 +1852,21 @@ function drawWinScreen(ctx) {
     );
   }
 
-  if (elapsed < 0.5) {
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, 1 - elapsed / 0.5);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, viewport.width, viewport.height);
-    ctx.restore();
-  }
-
-  const overlayAlpha = Math.min(elapsed / 1.5, 0.75);
+  // 暗い背景に切り替え（レトロ風）
+  const bgAlpha = Math.min(elapsed / 1.0, 0.92);
   ctx.save();
-  ctx.globalAlpha = overlayAlpha;
-  ctx.fillStyle = "#ffffff";
+  ctx.globalAlpha = bgAlpha;
+  ctx.fillStyle = "#0f0f23";
   ctx.fillRect(0, 0, viewport.width, viewport.height);
   ctx.restore();
 
-  if (elapsed > 0.2 && elapsed < 4.0) {
-    const rayAlpha = Math.min((elapsed - 0.2) / 0.5, 1) * 0.15;
+  // スキャンライン
+  if (bgAlpha > 0.3) {
     ctx.save();
-    ctx.globalAlpha = rayAlpha;
-    ctx.translate(viewport.width / 2, viewport.height / 2 - 30);
-    const rayCount = 12;
-    for (let i = 0; i < rayCount; i++) {
-      const angle = (i / rayCount) * Math.PI * 2 + elapsed * 0.3;
-      ctx.save();
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      const rayLen = viewport.width * 0.8;
-      ctx.lineTo(-30, rayLen);
-      ctx.lineTo(30, rayLen);
-      ctx.closePath();
-      ctx.fillStyle = "#ffd700";
-      ctx.fill();
-      ctx.restore();
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = "#fff";
+    for (let sl = 0; sl < viewport.height; sl += 4) {
+      ctx.fillRect(0, sl, viewport.width, 1);
     }
     ctx.restore();
   }
@@ -1440,92 +1875,71 @@ function drawWinScreen(ctx) {
     drawConfetti(ctx, state.winConfetti);
   }
 
-  const titleStart = 0.3;
+  const pixelFont = (size) => `900 ${size}px "Courier New", monospace`;
+  const cx = viewport.width / 2;
+  const cy = viewport.height / 2;
+
+  // CLEAR! テキスト
+  const titleStart = 0.5;
   const titleAlpha = Math.min(Math.max((elapsed - titleStart) / 0.4, 0), 1);
   if (titleAlpha > 0) {
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const fontSize = Math.floor(viewport.width * 0.09);
-    ctx.font = `bold ${fontSize}px Impact, "Arial Black", sans-serif`;
+    const fontSize = Math.floor(viewport.width * 0.08);
+    ctx.font = pixelFont(fontSize);
 
     const titleAge = elapsed - titleStart;
     let scale = 1;
     if (titleAge < 0.3) {
       scale = 1.5 - 0.5 * (titleAge / 0.3);
-    } else if (titleAge < 0.5) {
-      scale = 1 + 0.05 * Math.sin((titleAge - 0.3) / 0.2 * Math.PI);
     }
 
-    const cx = viewport.width / 2;
-    const cy = viewport.height / 2 - 70;
-    ctx.translate(cx, cy);
+    ctx.translate(cx, cy - 60);
     ctx.scale(scale, scale);
 
     ctx.globalAlpha = titleAlpha;
-    ctx.fillStyle = "#f0c040";
+    // 黒い影
+    ctx.fillStyle = "#000";
+    ctx.fillText("CLEAR!", 3, 3);
+    // メインテキスト（青）
+    ctx.fillStyle = "#29adff";
     ctx.fillText("CLEAR!", 0, 0);
 
     ctx.restore();
   }
 
+  // ピクセル風キラキラ
   if (elapsed > 0.5 && elapsed < 5.0) {
     ctx.save();
-    const sparkleCount = 8;
-    for (let i = 0; i < sparkleCount; i++) {
-      const t = elapsed * 2 + i * 1.3;
-      const sx = viewport.width / 2 + Math.sin(t * 1.7 + i) * viewport.width * 0.2;
-      const sy = viewport.height / 2 - 70 + Math.cos(t * 1.3 + i * 2) * 50;
-      const sparkleSize = (3 + Math.sin(t * 5) * 3) * (1 + Math.sin(elapsed * 3) * 0.3);
-      const sparkleAlpha = 0.5 + Math.sin(t * 4) * 0.5;
-      ctx.globalAlpha = sparkleAlpha;
-      ctx.fillStyle = "#fff";
-      ctx.shadowColor = "#ffd700";
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      for (let j = 0; j < 4; j++) {
-        const angle = (j / 4) * Math.PI * 2 + elapsed * 3;
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(sx + Math.cos(angle) * sparkleSize, sy + Math.sin(angle) * sparkleSize);
-        ctx.lineTo(sx + Math.cos(angle + 0.3) * sparkleSize * 0.3, sy + Math.sin(angle + 0.3) * sparkleSize * 0.3);
-      }
-      ctx.fill();
+    const starColors = ["#ffec27", "#29adff", "#ff004d", "#00e436", "#ffa300"];
+    for (let i = 0; i < 12; i++) {
+      const t = elapsed * 2 + i * 1.5;
+      const sx = cx + Math.sin(t * 1.7 + i) * viewport.width * 0.25;
+      const sy = cy - 60 + Math.cos(t * 1.3 + i * 2) * 60;
+      const size = 4 + Math.sin(t * 5) * 3;
+      const alpha = 0.4 + Math.sin(t * 4) * 0.4;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = starColors[i % starColors.length];
+      // ドット十字
+      ctx.fillRect(sx - size, sy - 1, size * 2, 2);
+      ctx.fillRect(sx - 1, sy - size, 2, size * 2);
     }
     ctx.restore();
   }
 
+  // 記録表示
   const recordAlpha = Math.min(Math.max((elapsed - 1.2) / 0.6, 0), 1);
   if (recordAlpha > 0) {
     ctx.save();
     ctx.globalAlpha = recordAlpha;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = `bold ${Math.floor(viewport.width * 0.025)}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
-    ctx.fillStyle = "#2a2a2a";
-    ctx.fillText(`記録: ${state.winRecord}`, viewport.width / 2, viewport.height / 2 + 20);
-    ctx.restore();
-  }
-
-  const retryAlpha = Math.min(Math.max((elapsed - 2.2) / 0.8, 0), 1);
-  state.retryReady = retryAlpha > 0;
-  if (retryAlpha > 0) {
-    ctx.save();
-    const pulse = 0.6 + Math.sin(elapsed * 3) * 0.15;
-    ctx.globalAlpha = retryAlpha * pulse;
-    ctx.fillStyle = "#666";
-    ctx.font = `22px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("スペースキーで最初に戻る", viewport.width / 2, viewport.height / 2 + 90);
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = retryAlpha * pulse;
-    ctx.fillStyle = "#888";
-    ctx.font = `18px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("Escキーでトップに戻る", viewport.width / 2, viewport.height / 2 + 125);
+    ctx.font = pixelFont(Math.floor(viewport.width * 0.03));
+    ctx.fillStyle = "#000";
+    ctx.fillText(`記録: ${state.winRecord}`, cx + 2, cy + 22);
+    ctx.fillStyle = "#ff004d";
+    ctx.fillText(`記録: ${state.winRecord}`, cx, cy + 20);
     ctx.restore();
   }
 
@@ -1554,6 +1968,7 @@ function render(ctx, canvas, timerEl) {
 
   const hudEl = document.querySelector(".hud");
   hudEl.style.display = (state.mode === "won" || state.mode === "lost") ? "none" : "";
+  document.querySelector(".home-btn").classList.toggle("visible", state.mode === "ready" || state.mode === "playing");
 
   if (state.mode === "lost") {
     drawLoseScreen(ctx);
@@ -1609,6 +2024,7 @@ function win() {
   sfx("win");
   state.winConfetti = createConfetti(200);
   state.winScreenShake = 1.0;
+  setTimeout(() => showRanking(state.timer), 3000);
 }
 
 function handleCollisions(event) {
@@ -1667,6 +2083,7 @@ function update(deltaMs) {
 }
 
 function resetGame(canvas) {
+  hideRanking();
   canvas.style.filter = "";
   const endOverlay = document.getElementById("end-img-overlay");
   endOverlay.style.transition = "none";
@@ -1770,13 +2187,17 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
   }
 
-  if (event.code === "Space" && state.retryReady) {
-    sfx("retry");
-    resetGame(canvas);
+  if (event.code === "Escape" && state.mode === "playing") {
+    window.location.href = "../";
     return;
   }
 
-  if (event.code === "Escape" && state.retryReady) {
+  if (event.code === "Space" && state.retryReady && !rankEntering) {
+    window.location.href = "../";
+    return;
+  }
+
+  if (event.code === "Escape" && state.retryReady && !rankEntering) {
     window.location.href = "../";
     return;
   }

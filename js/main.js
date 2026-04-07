@@ -1,4 +1,4 @@
-(function() {
+(function () {
   var canvas = document.getElementById("screen");
   var ctx = canvas.getContext("2d");
 
@@ -8,18 +8,26 @@
 
   function getCabinetAt(clientX, clientY) {
     var rectBox = canvas.getBoundingClientRect();
-    var x = ((clientX - rectBox.left) / rectBox.width) * Game.SCENE_WIDTH - (Game.OFFSET_X || 0);
-    var y = ((clientY - rectBox.top) / rectBox.height) * Game.SCENE_HEIGHT - Game.OFFSET_Y;
-    var hoverableUfos = Game.ufoCatchers.filter(function(u) { return u.id === "ufo-2"; });
+    var x =
+      ((clientX - rectBox.left) / rectBox.width) * Game.SCENE_WIDTH -
+      (Game.OFFSET_X || 0);
+    var y =
+      ((clientY - rectBox.top) / rectBox.height) * Game.SCENE_HEIGHT -
+      Game.OFFSET_Y;
+    var hoverableUfos = Game.ufoCatchers.filter(function (u) {
+      return u.id === "ufo-2";
+    });
     var allMachines = Game.cabinets.concat(hoverableUfos);
-    return allMachines.find(function(cabinet) {
-      return (
-        x >= cabinet.x &&
-        x <= cabinet.x + cabinet.w &&
-        y >= cabinet.y &&
-        y <= cabinet.y + cabinet.h
-      );
-    }) || null;
+    return (
+      allMachines.find(function (cabinet) {
+        return (
+          x >= cabinet.x &&
+          x <= cabinet.x + cabinet.w &&
+          y >= cabinet.y &&
+          y <= cabinet.y + cabinet.h
+        );
+      }) || null
+    );
   }
 
   Game.charFallTime = 0;
@@ -32,21 +40,31 @@
   var _prevMouseY = -9999;
   var _prevMouseTime = 0;
 
-  canvas.addEventListener("mousemove", function(event) {
+  canvas.addEventListener("mousemove", function (event) {
     Game.hoveredCabinet = getCabinetAt(event.clientX, event.clientY);
-    var isClickable = Game.hoveredCabinet && (Game.hoveredCabinet.id === "sad-run" || Game.hoveredCabinet.id === "train" || Game.hoveredCabinet.id === "maint");
+    var isClickable =
+      Game.hoveredCabinet &&
+      (Game.hoveredCabinet.id === "sad-run" ||
+        Game.hoveredCabinet.id === "train" ||
+        Game.hoveredCabinet.id === "maint");
     canvas.style.cursor = isClickable ? "pointer" : "default";
 
     // マウスのシーン座標を記録
     var rectBox = canvas.getBoundingClientRect();
-    var newX = ((event.clientX - rectBox.left) / rectBox.width) * Game.SCENE_WIDTH - (Game.OFFSET_X || 0);
-    var newY = ((event.clientY - rectBox.top) / rectBox.height) * Game.SCENE_HEIGHT - Game.OFFSET_Y;
+    var newX =
+      ((event.clientX - rectBox.left) / rectBox.width) * Game.SCENE_WIDTH -
+      (Game.OFFSET_X || 0);
+    var newY =
+      ((event.clientY - rectBox.top) / rectBox.height) * Game.SCENE_HEIGHT -
+      Game.OFFSET_Y;
     var now = performance.now();
     var dt = now - _prevMouseTime;
     if (dt > 0 && _prevMouseX > -9000) {
       Game.mouseVelX = (newX - _prevMouseX) / dt;
       Game.mouseVelY = (newY - _prevMouseY) / dt;
-      Game.mouseSpeed = Math.sqrt(Game.mouseVelX * Game.mouseVelX + Game.mouseVelY * Game.mouseVelY);
+      Game.mouseSpeed = Math.sqrt(
+        Game.mouseVelX * Game.mouseVelX + Game.mouseVelY * Game.mouseVelY,
+      );
     }
     _prevMouseX = newX;
     _prevMouseY = newY;
@@ -55,7 +73,7 @@
     Game.mouseSceneY = newY;
   });
 
-  canvas.addEventListener("mouseleave", function() {
+  canvas.addEventListener("mouseleave", function () {
     Game.hoveredCabinet = null;
     canvas.style.cursor = "default";
   });
@@ -72,24 +90,24 @@
       thumb: "assets/hotel-dangerous-thumb.png",
       thumb2: "assets/hotel-dangerous-thumb-2.png",
       desc: "いつも有給をとっているくせに、\n今日はあの大股の社員が出社するみたい...！\n小股のアルバイトの女の子を踏まないようにがんばって！",
-      url: "hotel-dangerous/index.html"
+      url: "hotel-dangerous/index.html",
     },
-    "train": {
+    train: {
       title: "んぽちゃむルンバ.exe",
       subtitle: "～んぽちゃむをルンバで連れて行こう～",
       thumb: "assets/npochamurunba-thumb.png",
       thumb2: "assets/npochamurunba-thumb-2.png",
       desc: "んぽちゃむったら旅行なのにまだ部屋にいるみたい！\nルンバで引きずり出してきみまろの元へ連れて行こう！\nマカロンに近づくと食べちゃうから気をつけて...！",
-      url: "npochamu-runba/index.html"
+      url: "npochamu-runba/index.html",
     },
-    "maint": {
-      title: "おぱんちゅ速履き.exe",
+    maint: {
+      title: "おぱんちゅ早履き.exe",
       subtitle: "～おぱんちゅを誰よりも速く履こう～",
       thumb: "assets/opantyu-thumb.png",
       thumb2: "assets/opantyu-thumb-2.png",
       desc: "おぱんちゅうさぎがパンツを速く履くゲーム！\nタイミングよくボタンを押して最速を目指そう！\nランキングに載れるかな...！？",
-      url: "opantyu/index.html"
-    }
+      url: "opantyu/index.html",
+    },
   };
 
   var popupOverlay = document.getElementById("game-popup-overlay");
@@ -105,7 +123,7 @@
   var popupBtnIndex = 1;
   var popupBtns = [
     document.getElementById("popup-cancel"),
-    document.getElementById("popup-close")
+    document.getElementById("popup-close"),
   ];
 
   function updatePopupBtnHighlight() {
@@ -122,22 +140,23 @@
     popupThumb.style.height = "";
     popupThumb.src = data.thumb;
     popupDesc.innerHTML = data.desc.replace(/\n/g, "<br>");
-    popupCounter.textContent = "ACCESS: " + ("000000" + Math.floor(Math.random() * 999999)).slice(-6);
+    popupCounter.textContent =
+      "ACCESS: " + ("000000" + Math.floor(Math.random() * 999999)).slice(-6);
     clearTimeout(popupThumbTimer);
     popupThumbTimer = null;
     if (data.thumb2) {
-      popupThumb.onload = function() {
+      popupThumb.onload = function () {
         popupThumb.style.height = popupThumb.offsetHeight + "px";
         popupThumb.onload = null;
         startIdleNoise();
-        popupThumbTimer = setTimeout(function() {
-          playCrtNoise(300, function() {
+        popupThumbTimer = setTimeout(function () {
+          playCrtNoise(300, function () {
             popupThumb.src = data.thumb2;
           });
         }, 2000);
       };
     } else {
-      popupThumb.onload = function() {
+      popupThumb.onload = function () {
         popupThumb.style.height = popupThumb.offsetHeight + "px";
         popupThumb.onload = null;
         startIdleNoise();
@@ -171,11 +190,14 @@
     var pixels = imgData.data;
 
     function drawIdle() {
-      if (isBurstPlaying) { idleNoiseId = requestAnimationFrame(drawIdle); return; }
+      if (isBurstPlaying) {
+        idleNoiseId = requestAnimationFrame(drawIdle);
+        return;
+      }
       // まばらなノイズ: ほとんど透明、ランダムにちらつく
       for (var i = 0; i < pixels.length; i += 4) {
         if (Math.random() < 0.03) {
-          var v = Math.random() * 255 | 0;
+          var v = (Math.random() * 255) | 0;
           pixels[i] = v;
           pixels[i + 1] = v;
           pixels[i + 2] = v;
@@ -202,7 +224,10 @@
   }
 
   function stopIdleNoise() {
-    if (idleNoiseId) { cancelAnimationFrame(idleNoiseId); idleNoiseId = null; }
+    if (idleNoiseId) {
+      cancelAnimationFrame(idleNoiseId);
+      idleNoiseId = null;
+    }
   }
 
   function playCrtNoise(duration, onDone) {
@@ -232,7 +257,7 @@
 
       // ランダムノイズ + 走査線
       for (var i = 0; i < pixels.length; i += 4) {
-        var v = Math.random() * 255 | 0;
+        var v = (Math.random() * 255) | 0;
         pixels[i] = v;
         pixels[i + 1] = v;
         pixels[i + 2] = v;
@@ -260,7 +285,10 @@
   function hidePopup() {
     clearTimeout(popupThumbTimer);
     popupThumbTimer = null;
-    if (noiseAnimId) { cancelAnimationFrame(noiseAnimId); noiseAnimId = null; }
+    if (noiseAnimId) {
+      cancelAnimationFrame(noiseAnimId);
+      noiseAnimId = null;
+    }
     isBurstPlaying = false;
     stopIdleNoise();
     noiseCanvas.style.opacity = "0";
@@ -272,7 +300,7 @@
     }
   }
 
-  popupClose.addEventListener("click", function() {
+  popupClose.addEventListener("click", function () {
     var data = popupData[Game._currentPopupId];
     if (data && data.url) {
       window.location.href = data.url;
@@ -281,13 +309,15 @@
     }
   });
   document.getElementById("popup-cancel").addEventListener("click", hidePopup);
-  document.getElementById("popup-header-close").addEventListener("click", hidePopup);
-  popupOverlay.addEventListener("click", function(event) {
+  document
+    .getElementById("popup-header-close")
+    .addEventListener("click", hidePopup);
+  popupOverlay.addEventListener("click", function (event) {
     if (event.target === popupOverlay) hidePopup();
   });
 
   // 矢印キーでゲーム機・ポップアップボタンを選択
-  window.addEventListener("keydown", function(event) {
+  window.addEventListener("keydown", function (event) {
     var isPopupOpen = popupOverlay.classList.contains("active");
 
     if (isPopupOpen) {
@@ -328,7 +358,7 @@
     }
   });
 
-  canvas.addEventListener("click", function(event) {
+  canvas.addEventListener("click", function (event) {
     Game.selectedCabinet = getCabinetAt(event.clientX, event.clientY);
     if (Game.selectedCabinet) {
       Game.leverClickTimes[Game.selectedCabinet.id] = performance.now();
@@ -363,7 +393,7 @@
       var wallAspect = img.naturalHeight / img.naturalWidth;
       var wallH = wallW * wallAspect;
       bgWallEl.style.left = rect.left + "px";
-      bgWallEl.style.top = (rect.bottom - wallH) + "px";
+      bgWallEl.style.top = rect.bottom - wallH + "px";
       bgWallEl.style.width = wallW + "px";
       bgWallEl.style.height = wallH + "px";
       bgWallEl.style.visibility = "visible";
@@ -373,8 +403,12 @@
   // UFO GIFオーバーレイの位置同期 & ホバーで再生制御
   var ufoOverlayData = [
     { still: "assets/ufo-1.gif", gif: "assets/ufo-1.gif", end: null },
-    { still: "assets/ufo-2.png", gif: "assets/ufo-2.gif", end: "assets/ufo-2-end.gif" },
-    { still: "assets/ufo-1.gif", gif: "assets/ufo-1.gif", end: null }
+    {
+      still: "assets/ufo-2.png",
+      gif: "assets/ufo-2.gif",
+      end: "assets/ufo-2-end.gif",
+    },
+    { still: "assets/ufo-1.gif", gif: "assets/ufo-1.gif", end: null },
   ];
   var ufoOverlays = [];
   for (var i = 0; i < Game.ufoCatchers.length; i++) {
@@ -410,7 +444,8 @@
       if (isActive) {
         if (!el._wasActive) {
           el._wasActive = true;
-          el.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+          el.src =
+            "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
           el.offsetHeight; // 強制再描画
           el.src = data.gif + "?" + Date.now();
         }

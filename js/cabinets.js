@@ -1,10 +1,9 @@
-Game.drawUfoCatcher = function(machine, colors, time) {
+Game.drawUfoCatcher = function (machine, colors, time) {
   var hovered = Game.hoveredCabinet && Game.hoveredCabinet.id === machine.id;
   var selected = Game.selectedCabinet && Game.selectedCabinet.id === machine.id;
-
 };
 
-Game.drawStool = function(x, y, highlight) {
+Game.drawStool = function (x, y, highlight) {
   var rect = Game.rect;
   rect(x, y, 36, 10, highlight ? "#ff6b58" : "#f1382d");
   rect(x + 4, y + 10, 28, 4, "#d4d4d4");
@@ -15,7 +14,7 @@ Game.drawStool = function(x, y, highlight) {
   rect(x + 30, y + 34, 4, 6, "#4f5459");
 };
 
-Game.drawBackCabinet = function(cabinet, index, time) {
+Game.drawBackCabinet = function (cabinet, index, time) {
   var rect = Game.rect;
   var ctx = Game.ctx;
   var hovered = Game.hoveredCabinet && Game.hoveredCabinet.id === cabinet.id;
@@ -38,7 +37,7 @@ Game.drawBackCabinet = function(cabinet, index, time) {
     size: 16,
     color: "#f0f6ff",
     align: "center",
-    font: '900 16px "Courier New", monospace'
+    font: '900 16px "Courier New", monospace',
   });
 
   // Gray separator strip
@@ -73,8 +72,10 @@ Game.drawBackCabinet = function(cabinet, index, time) {
     // "INSERT COIN" テキスト点滅
     if (Math.sin(time * 0.003) > -0.3) {
       Game.text("INSERT COIN", sx + sw / 2, sy + sh - 8, {
-        size: 8, color: "#88ffaa", align: "center",
-        font: '900 8px "Courier New", monospace'
+        size: 8,
+        color: "#88ffaa",
+        align: "center",
+        font: '900 8px "Courier New", monospace',
       });
     }
   } else if (index === 1) {
@@ -89,8 +90,10 @@ Game.drawBackCabinet = function(cabinet, index, time) {
     // スコア表示
     var score = Math.floor(time * 0.05) % 99999;
     Game.text(("00000" + score).slice(-5), sx + sw / 2, sy + 16, {
-      size: 12, color: "#ffffff", align: "center",
-      font: '900 12px "Courier New", monospace'
+      size: 12,
+      color: "#ffffff",
+      align: "center",
+      font: '900 12px "Courier New", monospace',
     });
   } else {
     // Cabinet 3: バウンドするドット
@@ -111,8 +114,10 @@ Game.drawBackCabinet = function(cabinet, index, time) {
     // "INSERT COIN" 点滅
     if (Math.sin(time * 0.003) > -0.3) {
       Game.text("INSERT COIN", sx + sw / 2, sy + sh - 8, {
-        size: 8, color: "#88ffaa", align: "center",
-        font: '900 8px "Courier New", monospace'
+        size: 8,
+        color: "#88ffaa",
+        align: "center",
+        font: '900 8px "Courier New", monospace',
       });
     }
   }
@@ -200,7 +205,7 @@ Game.drawBackCabinet = function(cabinet, index, time) {
   Game.drawStool(x + 32, y + 196, false);
 };
 
-Game.drawFrontCabinet = function(cabinet, theme, time) {
+Game.drawFrontCabinet = function (cabinet, theme, time) {
   var rect = Game.rect;
   var ctx = Game.ctx;
   var hovered = Game.hoveredCabinet && Game.hoveredCabinet.id === cabinet.id;
@@ -217,8 +222,10 @@ Game.drawFrontCabinet = function(cabinet, theme, time) {
   // 上部マーキー（ゲーム名の看板）
   rect(cx + 8, cy + 6, cw - 16, 20, "#1a1a1a");
   Game.text(cabinet.label, cx + cw / 2, cy + 21, {
-    size: 10, color: "#ffffff", align: "center",
-    font: '900 10px "Courier New", monospace'
+    size: 10,
+    color: "#ffffff",
+    align: "center",
+    font: '900 10px "Courier New", monospace',
   });
 
   // 画面フレーム
@@ -259,7 +266,7 @@ Game.drawFrontCabinet = function(cabinet, theme, time) {
     }
   }
 
-  // おぱんちゅ速履き画面
+  // おぱんちゅ早履き画面
   if (cabinet.id === "maint") {
     var sx = cx + 18;
     var sy = cy + 36;
@@ -370,8 +377,10 @@ Game.drawFrontCabinet = function(cabinet, theme, time) {
 
 Game._bubbleState = { id: null, startTime: 0 };
 
-Game.drawCabinetBubble = function(cabinet, time) {
-  var pixelFont = function(s) { return s + 'px "Courier New", "MS Gothic", monospace'; };
+Game.drawCabinetBubble = function (cabinet, time) {
+  var pixelFont = function (s) {
+    return s + 'px "Courier New", "MS Gothic", monospace';
+  };
   var ctx = Game.ctx;
   var rect = Game.rect;
   var msgSize = 12;
@@ -413,21 +422,21 @@ Game.drawCabinetBubble = function(cabinet, time) {
   var totalLen = 0;
 
   for (var tx = px + p; tx < px + pw - p; tx += p) {
-    segments.push({x: tx, y: py, w: p, h: p});
+    segments.push({ x: tx, y: py, w: p, h: p });
   }
-  segments.push({x: px + pw - p, y: py + p, w: p, h: p});
+  segments.push({ x: px + pw - p, y: py + p, w: p, h: p });
   for (var ry = py + p * 2; ry < py + ph - p; ry += p) {
-    segments.push({x: px + pw - p, y: ry, w: p, h: p});
+    segments.push({ x: px + pw - p, y: ry, w: p, h: p });
   }
-  segments.push({x: px + pw - p * 2, y: py + ph - p, w: p, h: p});
+  segments.push({ x: px + pw - p * 2, y: py + ph - p, w: p, h: p });
   for (var bxe = px + pw - p * 2; bxe >= px + p; bxe -= p) {
-    segments.push({x: bxe, y: py + ph - p, w: p, h: p});
+    segments.push({ x: bxe, y: py + ph - p, w: p, h: p });
   }
-  segments.push({x: px, y: py + ph - p * 2, w: p, h: p});
+  segments.push({ x: px, y: py + ph - p * 2, w: p, h: p });
   for (var ly = py + ph - p * 2; ly >= py + p; ly -= p) {
-    segments.push({x: px, y: ly, w: p, h: p});
+    segments.push({ x: px, y: ly, w: p, h: p });
   }
-  segments.push({x: px + p, y: py, w: p, h: p});
+  segments.push({ x: px + p, y: py, w: p, h: p });
 
   totalLen = segments.length;
 
@@ -459,20 +468,26 @@ Game.drawCabinetBubble = function(cabinet, time) {
     // 突起（台形、本体下辺から滑らかに接続）
     // 段1: 本体下辺と同じ幅からスタート
     rect(bx - p * 3, py + ph, p * 6, p, fill);
-    rect(bx - p * 3, py + ph, p, p, border);       // 左角
-    rect(bx + p * 2, py + ph, p, p, border);        // 右角
+    rect(bx - p * 3, py + ph, p, p, border); // 左角
+    rect(bx + p * 2, py + ph, p, p, border); // 右角
     // 段2
     rect(bx - p * 2, py + ph + p, p * 4, p, fill);
-    rect(bx - p * 2, py + ph + p, p, p, border);    // 左辺
-    rect(bx + p, py + ph + p, p, p, border);         // 右辺
+    rect(bx - p * 2, py + ph + p, p, p, border); // 左辺
+    rect(bx + p, py + ph + p, p, p, border); // 右辺
     // 段3: 先端
     rect(bx - p, py + ph + p * 2, p * 2, p, border);
 
     var charInterval = 50;
     var textElapsed = elapsed - borderDuration - 300;
-    var visibleChars = Math.min(Math.floor(textElapsed / charInterval), msg.length);
+    var visibleChars = Math.min(
+      Math.floor(textElapsed / charInterval),
+      msg.length,
+    );
     var msg1Visible = Math.min(visibleChars, msg1.length);
-    var msg2Visible = Math.max(Math.min(visibleChars - msg1.length, msg2.length), 0);
+    var msg2Visible = Math.max(
+      Math.min(visibleChars - msg1.length, msg2.length),
+      0,
+    );
 
     ctx.save();
     ctx.beginPath();
@@ -484,7 +499,7 @@ Game.drawCabinetBubble = function(cabinet, time) {
         size: msgSize,
         font: pixelFont(msgSize),
         color: "#5b4636",
-        align: "center"
+        align: "center",
       });
     }
     if (msg2Visible > 0) {
@@ -492,7 +507,7 @@ Game.drawCabinetBubble = function(cabinet, time) {
         size: msgSize,
         font: pixelFont(msgSize),
         color: "#5b4636",
-        align: "center"
+        align: "center",
       });
     }
 
