@@ -30,7 +30,7 @@ Game.palette = {
 Game.cabinets = [
   { id: "sad-run", x: 534, y: 504, w: 176, h: 228, label: "大股の社員", message: "水たまりを全部よけたのに、最後だけしっかり濡れるゲーム。" },
   { id: "train", x: 736, y: 504, w: 176, h: 228, label: "んぽちゃむルンバ", message: "電車には乗れたのに、忘れものだけは毎回ちゃんと発生します。" },
-  { id: "maint", x: 942, y: 504, w: 176, h: 228, label: "おぱんちゅ速履き", message: "故障してるみたい...！\nだれか関係者を呼んできて...！" },
+  { id: "maint", x: 942, y: 504, w: 176, h: 228, label: "おぱんちゅ速履き", message: "おぱんちゅを誰よりも\n速く履くゲームだよ！" },
   { id: "mic", x: 678, y: 270, w: 126, h: 204, label: "うたう部屋", message: "画面の中のうさぎが、マイクをにぎって気合いだけはあります。" },
   { id: "rail", x: 820, y: 270, w: 126, h: 204, label: "かえりみち", message: "電車に乗っても、だいたいひと駅ぶん切なさが残ります。" },
   { id: "season", x: 960, y: 270, w: 126, h: 204, label: "SEASON GAME", message: "季節イベントは華やかなのに、景品コメントだけ妙にしみます。" }
@@ -79,5 +79,5 @@ Game.hoveredCabinet = null;
 Game.selectedCabinet = null;
 
 // 矢印キーで選択可能なゲーム機のインデックス（cabinets配列内）
-Game.selectableIndices = [0, 1]; // sad-run, train
+Game.selectableIndices = [0, 1, 2]; // sad-run, train, maint
 Game.cursorIndex = 0; // 現在の選択位置

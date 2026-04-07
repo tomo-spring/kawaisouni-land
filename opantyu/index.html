@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>おぱんちゅ早履きゲーム</title>
+<style>
+@font-face {
+  font-family: 'DotGothic';
+  src: local('DotGothic16'), local('PixelMplus12'), local('MisakiGothic');
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0f0f23;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.15) 2px,
+    rgba(0,0,0,0.15) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#game-container {
+  position: relative;
+  width: 1344px;
+  height: 756px;
+  max-width: 100vw;
+  max-height: 100vh;
+  background: #0f0f23;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  border: 6px solid #444;
+  box-shadow:
+    0 0 0 3px #222,
+    0 0 40px rgba(0,255,100,0.1),
+    inset 0 0 80px rgba(0,0,0,0.5);
+}
+
+#game-container video {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+#game-container img {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.screen {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.screen.active { display: flex; }
+
+/* ===== Pixel text helpers ===== */
+.pixel-text {
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-shadow: 3px 3px 0 rgba(0,0,0,0.7);
+}
+
+/* ===== Blink animation ===== */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes flashBg {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes rainbowText {
+  0%   { color: #ff004d; }
+  16%  { color: #ffa300; }
+  33%  { color: #ffec27; }
+  50%  { color: #00e436; }
+  66%  { color: #29adff; }
+  83%  { color: #ff77a8; }
+  100% { color: #ff004d; }
+}
+
+@keyframes pixelPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,0,77,0.7); }
+  50% { box-shadow: 0 0 0 12px rgba(255,0,77,0); }
+}
+
+/* ===== Feint screen ===== */
+#feint-screen {
+  background: #1d2b53;
+  background-image:
+    linear-gradient(rgba(29,43,83,0.95) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29,43,83,0.95) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+#feint-screen .feint-text {
+  font-size: 72px;
+  font-weight: bold;
+  color: #ffec27;
+  text-align: center;
+  text-shadow: 4px 4px 0 #ab5236;
+  animation: shake 0.3s infinite;
+}
+
+#feint-screen .wait-text {
+  font-size: 36px;
+  color: #7e2553;
+  margin-top: 30px;
+  animation: blink 1s infinite;
+  text-shadow: 2px 2px 0 #000;
+}
+
+/* ===== Action screen ===== */
+#action-screen {
+  background: transparent;
+  z-index: 10;
+  justify-content: flex-end;
+  padding-bottom: 90px;
+}
+
+#action-screen .action-title {
+  font-size: 64px;
+  font-weight: bold;
+  color: #ff004d;
+  margin-bottom: 50px;
+  text-shadow: 4px 4px 0 #7e2553;
+  animation: rainbowText 0.5s infinite;
+}
+
+#action-screen .action-btn {
+  background: #ff004d;
+  color: #fff1e8;
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+  font-size: 48px;
+  font-weight: bold;
+  border: 6px solid #7e2553;
+  padding: 12px 64px;
+  cursor: pointer;
+  text-shadow: 2px 2px 0 #000;
+  box-shadow:
+    6px 6px 0 #7e2553,
+    inset 0 -6px 0 rgba(0,0,0,0.3);
+  animation: pixelPulse 0.6s infinite;
+  transition: transform 0.1s;
+  image-rendering: pixelated;
+}
+
+#action-screen .action-btn:hover {
+  transform: scale(1.05);
+  background: #ff77a8;
+}
+
+#action-screen .action-btn:active {
+  transform: scale(0.95) translateY(3px);
+  box-shadow: 2px 2px 0 #7e2553;
+}
+
+/* ===== Celebration screen (pachinko style) ===== */
+#celebration-screen {
+  background: #000;
+  overflow: hidden;
+}
+
+#celebration-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1;
+}
+
+.celeb-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.celeb-big-text {
+  font-size: 100px;
+  font-weight: bold;
+  text-align: center;
+  animation: celebZoom 0.6s ease-out forwards, rainbowText 0.3s infinite;
+  text-shadow:
+    0 0 20px #ff004d,
+    0 0 40px #ffa300,
+    0 0 80px #ffec27,
+    4px 4px 0 #000;
+  opacity: 0;
+  transform: scale(5);
+}
+
+@keyframes celebZoom {
+  0%   { opacity: 0; transform: scale(5) rotate(-10deg); }
+  60%  { opacity: 1; transform: scale(0.9) rotate(3deg); }
+  80%  { transform: scale(1.1) rotate(-1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.celeb-sub-text {
+  font-size: 48px;
+  color: #ffec27;
+  margin-top: 20px;
+  opacity: 0;
+  animation: celebFadeIn 0.5s 0.8s forwards;
+  text-shadow:
+    0 0 10px #ffa300,
+    3px 3px 0 #000;
+}
+
+.celeb-time-text {
+  font-size: 72px;
+  color: #fff;
+  margin-top: 30px;
+  opacity: 0;
+  animation: celebFadeIn 0.5s 1.4s forwards;
+  text-shadow:
+    0 0 20px #29adff,
+    0 0 40px #29adff,
+    4px 4px 0 #000;
+}
+
+@keyframes celebFadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes celebTimePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+
+/* === Freeze overlay (covers everything during freeze sequence) === */
+#freeze-overlay {
+  display: none;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+#freeze-overlay.active { display: block; }
+
+/* Phase 1: blackout */
+#freeze-overlay .freeze-black {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  opacity: 0;
+}
+
+/* Phase 2: light burst from center */
+#freeze-overlay .freeze-light {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, rgba(255,200,50,0.8) 30%, rgba(255,0,77,0.4) 60%, transparent 100%);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+
+/* Phase 3: flash strobe */
+#freeze-overlay .freeze-strobe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #fff;
+  opacity: 0;
+}
+
+/* Freeze: celebration text override */
+#celebration-screen.celeb-freeze .celeb-big-text {
+  font-size: 120px;
+  opacity: 0;
+}
+
+#celebration-screen.celeb-freeze .celeb-overlay {
+  opacity: 0;
+}
+
+#celebration-screen.celeb-freeze.freeze-reveal .celeb-overlay {
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+#celebration-screen.celeb-freeze.freeze-reveal .celeb-big-text {
+  opacity: 1;
+  animation: freezeTextReveal 0.8s ease-out forwards, rainbowText 0.3s 0.8s infinite;
+}
+
+@keyframes freezeTextReveal {
+  0%   { transform: scale(4); opacity: 0; text-shadow: 0 0 100px #fff; }
+  30%  { transform: scale(1.3); opacity: 1; text-shadow: 0 0 60px #fff, 0 0 120px #ffec27; }
+  60%  { transform: scale(0.95); text-shadow: 0 0 30px #fff, 0 0 60px #ffa300; }
+  100% { transform: scale(1); text-shadow: 0 0 20px #ff004d, 0 0 40px #ffa300, 0 0 80px #ffec27, 4px 4px 0 #000; }
+}
+
+.celeb-prompt {
+  font-size: 24px;
+  margin-top: 30px;
+  color: #c2c3c7;
+  opacity: 0;
+  animation: celebFadeIn 0.5s 2.5s forwards, blink 1.2s 2.5s infinite;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.celeb-quiet .celeb-prompt {
+  animation: celebFadeIn 0.5s 1.2s forwards, blink 1.2s 1.2s infinite;
+}
+
+.celeb-rank-text {
+  font-size: 36px;
+  margin-top: 20px;
+  opacity: 0;
+  color: #fff;
+  animation: celebFadeIn 0.5s 2s forwards;
+  text-shadow: 3px 3px 0 #000;
+}
+
+/* Flashing border for celebration */
+#celebration-screen::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  right: 0; bottom: 0;
+  z-index: 3;
+  pointer-events: none;
+  border: 12px solid transparent;
+  box-sizing: border-box;
+  animation: celebBorder 0.2s infinite;
+}
+
+@keyframes celebBorder {
+  0%   { border-color: #ff004d; }
+  25%  { border-color: #ffec27; }
+  50%  { border-color: #00e436; }
+  75%  { border-color: #29adff; }
+  100% { border-color: #ff77a8; }
+}
+
+/* Corner burst decorations */
+.celeb-corner {
+  position: absolute;
+  width: 200px; height: 200px;
+  z-index: 2;
+  pointer-events: none;
+}
+.celeb-corner.tl { top: 0; left: 0; }
+.celeb-corner.tr { top: 0; right: 0; transform: scaleX(-1); }
+.celeb-corner.bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.celeb-corner.br { bottom: 0; right: 0; transform: scale(-1); }
+
+.celeb-corner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: conic-gradient(
+    from 0deg at 0% 0%,
+    #ff004d 0deg, #ffa300 45deg,
+    transparent 90deg, transparent 360deg
+  );
+  animation: celebCornerSpin 1s linear infinite;
+}
+
+@keyframes celebCornerSpin {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* Quiet celebration (slow time) */
+.celeb-quiet #celebration-canvas { display: none; }
+.celeb-quiet .celeb-corner { display: none; }
+.celeb-quiet::before { display: none; }
+.celeb-quiet { background: #1d2b53; }
+/* Lite celebration (fast but not ranked) */
+.celeb-lite .celeb-big-text {
+  animation: celebZoom 0.6s ease-out forwards;
+  color: #c2c3c7;
+  text-shadow: 3px 3px 0 rgba(0,0,0,0.7);
+}
+
+/* Quiet celebration (slow) */
+.celeb-quiet .celeb-big-text {
+  animation: celebZoom 0.6s ease-out forwards;
+  color: #c2c3c7;
+  text-shadow: 2px 2px 0 #000;
+  transform: rotate(-5deg);
+}
+.celeb-quiet .celeb-time-text {
+  text-shadow: 2px 2px 0 #000;
+  color: #c2c3c7;
+  animation: celebFadeIn 0.5s 0.5s forwards;
+}
+.celeb-quiet .celeb-rank-text {
+  animation: celebFadeIn 0.5s 0.8s forwards;
+  color: #5f574f;
+}
+
+/* ===== Result screen ===== */
+#result-screen {
+  background: #1d2b53;
+  background-image:
+    radial-gradient(circle at 50% 50%, #29366f 0%, #1d2b53 70%);
+}
+
+.result-panel {
+  background: #0f0f23;
+  border: 6px solid #29adff;
+  padding: 36px 50px;
+  max-width: 800px;
+  width: 85%;
+  text-align: center;
+  box-shadow:
+    8px 8px 0 #000,
+    0 0 30px rgba(41,173,255,0.3);
+  position: relative;
+}
+
+/* Corner decorations */
+.result-panel::before,
+.result-panel::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  background: #29adff;
+}
+.result-panel::before { top: -3px; left: -3px; }
+.result-panel::after { top: -3px; right: -3px; }
+
+.result-panel h2 {
+  font-size: 42px;
+  color: #29adff;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.result-panel .your-time {
+  font-size: 36px;
+  color: #ff004d;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.result-panel .rank-label {
+  font-size: 24px;
+  color: #ffec27;
+  margin-bottom: 16px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+/* Name input */
+#name-input-area {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+#name-input-area.active { display: flex; }
+
+#name-input-area h3 {
+  font-size: 32px;
+  color: #ffa300;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 #000;
+  animation: blink 0.8s infinite;
+}
+
+#name-input-area p {
+  color: #c2c3c7;
+  font-size: 18px;
+  margin-bottom: 12px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+#name-input-area input {
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+  font-size: 28px;
+  padding: 8px 16px;
+  width: 280px;
+  text-align: center;
+  border: 4px solid #29adff;
+  background: #1d2b53;
+  color: #fff1e8;
+  margin-bottom: 12px;
+  outline: none;
+  text-shadow: 1px 1px 0 #000;
+}
+
+#name-input-area input:focus {
+  border-color: #ffec27;
+  box-shadow: 0 0 10px rgba(255,236,39,0.5);
+}
+
+#name-input-area button {
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+  font-size: 22px;
+  padding: 8px 36px;
+  background: #00e436;
+  color: #0f0f23;
+  border: 4px solid #008751;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 4px 4px 0 #000;
+  transition: transform 0.1s;
+}
+
+#name-input-area button:hover {
+  transform: scale(1.05);
+}
+
+#name-input-area button:active {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* Ranking list */
+#ranking-area {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+}
+
+#ranking-area.active { display: flex; }
+
+#ranking-area h3 {
+  font-size: 28px;
+  color: #ffa300;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+#ranking-list {
+  list-style: none;
+  margin: 4px 0 12px;
+  width: 100%;
+}
+
+#ranking-list li {
+  font-size: 20px;
+  padding: 3px 0;
+  color: #c2c3c7;
+  text-shadow: 1px 1px 0 #000;
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+}
+
+#ranking-list li.highlight {
+  color: #ffec27;
+  font-weight: bold;
+  animation: blink 0.6s infinite;
+}
+
+.retry-text {
+  font-size: 20px;
+  color: #5f574f;
+  margin-top: 12px;
+  animation: blink 1.2s infinite;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* ===== Penalty screen ===== */
+#penalty-screen {
+  background: #1d0b2e;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+#penalty-screen .penalty-title {
+  font-size: 64px;
+  font-weight: bold;
+  color: #ff004d;
+  margin-bottom: 20px;
+  text-shadow: 4px 4px 0 #000;
+  animation: shake 0.2s infinite;
+}
+
+#penalty-screen .penalty-sub {
+  font-size: 36px;
+  color: #7e2553;
+  margin-bottom: 40px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+#penalty-screen .retry-text {
+  color: #5f574f;
+}
+
+/* ===== Star field background for start screens ===== */
+#start-screen, #start2-screen {
+  background: #0f0f23;
+}
+
+/* ===== HP/Status bar decoration ===== */
+.status-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  height: 36px;
+  background: rgba(0,0,0,0.6);
+  border: 3px solid #5f574f;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  z-index: 10;
+  display: none;
+}
+
+.screen.active .status-bar { display: flex; }
+
+.status-bar .label {
+  color: #ffec27;
+  font-size: 16px;
+  text-shadow: 1px 1px 0 #000;
+  font-family: 'DotGothic16', 'DotGothic', 'Courier New', monospace;
+}
+
+/* ===== CRT vignette ===== */
+#game-container::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0,0,0,0.5) 100%
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ===== Video pixel effect ===== */
+#game-container video {
+  image-rendering: pixelated;
+}
+</style>
+<!-- Google Fonts: DotGothic16 for pixel look -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="game-container">
+  <!-- Start screen 1: opimage -->
+  <div id="start-screen" class="screen active">
+    <img src="movies/opimage.png" alt="opening">
+    <div style="position:absolute;bottom:60px;text-align:center;width:100%;">
+      <span class="pixel-text" style="font-size:28px;color:#ffec27;animation:blink 1s infinite;">
+        - スペースキーかクリックでスタート -
+      </span>
+    </div>
+  </div>
+
+  <!-- Start screen 2: opimage2 -->
+  <div id="start2-screen" class="screen">
+    <img src="movies/opimage2.png" alt="opening2">
+    <div style="position:absolute;bottom:60px;text-align:center;width:100%;">
+      <span class="pixel-text" style="font-size:28px;color:#ffec27;animation:blink 1s infinite;">
+        - スペースキーかクリック -
+      </span>
+    </div>
+  </div>
+
+  <!-- Opening video -->
+  <div id="opening-screen" class="screen">
+    <video id="opening-video" src="movies/opmovie.mp4" preload="auto"></video>
+    <div style="position:absolute;bottom:20px;right:20px;z-index:10;">
+      <span class="pixel-text" style="font-size:18px;color:#5f574f;animation:blink 1.5s infinite;">
+        クリックでスキップ >>
+      </span>
+    </div>
+  </div>
+
+  <!-- Video layer for feint videos (double buffered) -->
+  <div id="video-screen" class="screen">
+    <video id="feint-video-a" preload="auto" style="z-index:1;"></video>
+    <video id="feint-video-b" preload="auto" style="z-index:0;"></video>
+  </div>
+
+  <!-- Feint screen (text fallback when video ends) -->
+  <div id="feint-screen" class="screen">
+    <div class="feint-text pixel-text" id="feint-text">履くの？</div>
+    <div class="wait-text pixel-text">...まだだよ...</div>
+  </div>
+
+  <!-- Action screen -->
+  <div id="action-screen" class="screen">
+    <button class="action-btn pixel-text" id="action-btn">クリック!!</button>
+  </div>
+
+  <!-- Celebration screen (pachinko) -->
+  <div id="celebration-screen" class="screen">
+    <canvas id="celebration-canvas"></canvas>
+    <div id="freeze-overlay">
+      <div class="freeze-black"></div>
+      <div class="freeze-light"></div>
+      <div class="freeze-strobe"></div>
+    </div>
+    <div class="celeb-corner tl"></div>
+    <div class="celeb-corner tr"></div>
+    <div class="celeb-corner bl"></div>
+    <div class="celeb-corner br"></div>
+    <div class="celeb-overlay">
+      <div class="celeb-big-text pixel-text" id="celeb-big-text">履いてた！！</div>
+      <div class="celeb-sub-text pixel-text" id="celeb-sub-text"></div>
+      <div class="celeb-time-text pixel-text" id="celeb-time-text"></div>
+      <div class="celeb-rank-text pixel-text" id="celeb-rank-text"></div>
+      <div class="celeb-prompt pixel-text" id="celeb-prompt"></div>
+    </div>
+  </div>
+
+  <!-- Result screen -->
+  <div id="result-screen" class="screen">
+    <div class="result-panel">
+      <h2 class="pixel-text">- 結果発表 -</h2>
+      <div class="your-time pixel-text" id="your-time"></div>
+      <div class="rank-label pixel-text" id="rank-label"></div>
+
+      <div id="name-input-area">
+        <h3 class="pixel-text">ハイスコア!</h3>
+        <p class="pixel-text">名前を入力してください</p>
+        <input type="text" id="name-input" maxlength="10" placeholder="なまえ">
+        <button id="name-submit" class="pixel-text">決定</button>
+      </div>
+
+      <div id="ranking-area">
+        <h3 class="pixel-text">- ランキング -</h3>
+        <ol id="ranking-list"></ol>
+      </div>
+
+      <div class="retry-text pixel-text">クリックでリトライ</div>
+    </div>
+  </div>
+
+  <!-- Penalty screen -->
+  <div id="penalty-screen" class="screen">
+    <div class="penalty-title pixel-text">おてつき!</div>
+    <div class="penalty-sub pixel-text">まだ履いてない...</div>
+    <div class="retry-text pixel-text">クリックでリトライ</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // --- Constants ---
+  const MAX_RANKING = 10;
+  const RANKING_KEY = 'opantyu_ranking';
+
+  // --- DOM ---
+  const container = document.getElementById('game-container');
+  const screens = {
+    start:       document.getElementById('start-screen'),
+    start2:      document.getElementById('start2-screen'),
+    opening:     document.getElementById('opening-screen'),
+    video:       document.getElementById('video-screen'),
+    feint:       document.getElementById('feint-screen'),
+    action:      document.getElementById('action-screen'),
+    celebration: document.getElementById('celebration-screen'),
+    result:      document.getElementById('result-screen'),
+    penalty:     document.getElementById('penalty-screen'),
+  };
+
+  const openingVideo = document.getElementById('opening-video');
+  const feintVideoA  = document.getElementById('feint-video-a');
+  const feintVideoB  = document.getElementById('feint-video-b');
+  let feintFront = feintVideoA;  // currently visible
+  let feintBack  = feintVideoB;  // preloading next
+  const feintText    = document.getElementById('feint-text');
+  const actionBtn    = document.getElementById('action-btn');
+  const yourTime     = document.getElementById('your-time');
+  const rankLabel    = document.getElementById('rank-label');
+  const nameArea     = document.getElementById('name-input-area');
+  const rankingArea  = document.getElementById('ranking-area');
+  const nameInput    = document.getElementById('name-input');
+  const nameSubmit   = document.getElementById('name-submit');
+  const rankingList  = document.getElementById('ranking-list');
+  const celebCanvas  = document.getElementById('celebration-canvas');
+  const celebCtx     = celebCanvas.getContext('2d');
+  const celebBigText = document.getElementById('celeb-big-text');
+  const celebTimeText = document.getElementById('celeb-time-text');
+  const celebRankText = document.getElementById('celeb-rank-text');
+
+  // --- State ---
+  let state = 'start';
+  let feintCountTarget = 0;
+  let currentFeintCount = 0;
+  let feintTimer = null;
+  let startTime = 0;
+  let reactionTime = 0;
+  let isEnteringName = false;
+  let celebAnimId = null;
+  let celebParticles = [];
+  let celebTimer = null;
+  let celebReady = false; // 演出が終わって操作受付可能か
+  let celebLite = false;
+
+  // --- 8-bit Sound FX ---
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+  }
+
+  function playBeep(freq, duration, type = 'square') {
+    ensureAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.value = 0.08;
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  function sfxClick() { playBeep(800, 0.08); }
+  function sfxFeint() { playBeep(220, 0.15, 'sawtooth'); }
+  function sfxAction() {
+    playBeep(523, 0.1);
+    setTimeout(() => playBeep(659, 0.1), 80);
+    setTimeout(() => playBeep(784, 0.15), 160);
+  }
+  function sfxPenalty() {
+    playBeep(150, 0.3, 'sawtooth');
+    setTimeout(() => playBeep(100, 0.4, 'sawtooth'), 200);
+  }
+  function sfxHighScore() {
+    [523,659,784,1047].forEach((f, i) => {
+      setTimeout(() => playBeep(f, 0.15), i * 120);
+    });
+  }
+
+  // Kyuin sound from mp3 file
+  const kyuinAudio = new Audio('movies/kyuin.mp3');
+  kyuinAudio.preload = 'auto';
+  const freezeAudio = new Audio('movies/freeze.mp3');
+  freezeAudio.preload = 'auto';
+
+  function sfxCelebration() {
+    kyuinAudio.currentTime = 0;
+    kyuinAudio.play().catch(() => {});
+  }
+
+  function stopCelebrationSound() {
+    kyuinAudio.pause();
+    kyuinAudio.currentTime = 0;
+    freezeAudio.pause();
+    freezeAudio.currentTime = 0;
+  }
+
+  // --- Celebration particle system ---
+  const CELEB_COLORS = [
+    '#ff004d','#ffa300','#ffec27','#00e436','#29adff',
+    '#ff77a8','#ff0040','#fff','#ffcc00','#00ffcc'
+  ];
+
+  function createParticle(x, y, type) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 8;
+    return {
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      size: type === 'star' ? 4 + Math.random() * 6 : 2 + Math.random() * 4,
+      color: CELEB_COLORS[Math.floor(Math.random() * CELEB_COLORS.length)],
+      life: 1,
+      decay: 0.005 + Math.random() * 0.015,
+      type, // 'spark', 'star', 'confetti'
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.3,
+      gravity: type === 'confetti' ? 0.05 : 0.02,
+      width: type === 'confetti' ? 6 + Math.random() * 8 : 0,
+      height: type === 'confetti' ? 4 + Math.random() * 6 : 0,
+    };
+  }
+
+  function burstParticles(cx, cy, count, type) {
+    for (let i = 0; i < count; i++) {
+      celebParticles.push(createParticle(cx, cy, type));
+    }
+  }
+
+  function drawStar(ctx, cx, cy, r, color, rotation) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+      const method = i === 0 ? 'moveTo' : 'lineTo';
+      ctx[method](Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  let celebFlashFrame = 0;
+  let celebBurstTimer = 0;
+
+  function celebLoop() {
+    const W = celebCanvas.width;
+    const H = celebCanvas.height;
+
+    celebFlashFrame++;
+    celebBurstTimer++;
+
+    // Background flash
+    const flashIntensity = Math.sin(celebFlashFrame * 0.15) * 0.3 + 0.3;
+    const bgColors = ['#1a0a2e','#0a1a2e','#2e0a1a','#0a2e1a'];
+    const bgIdx = Math.floor(celebFlashFrame / 8) % bgColors.length;
+    celebCtx.fillStyle = bgColors[bgIdx];
+    celebCtx.globalAlpha = 1;
+    celebCtx.fillRect(0, 0, W, H);
+
+    // Radiating light beams from center (skip in lite mode)
+    if (!celebLite) {
+    const beamCount = 16;
+    for (let i = 0; i < beamCount; i++) {
+      const a = (i / beamCount) * Math.PI * 2 + celebFlashFrame * 0.02;
+      celebCtx.save();
+      celebCtx.translate(W / 2, H / 2);
+      celebCtx.rotate(a);
+      const grad = celebCtx.createLinearGradient(0, 0, W, 0);
+      const beamColor = CELEB_COLORS[i % CELEB_COLORS.length];
+      grad.addColorStop(0, beamColor);
+      grad.addColorStop(1, 'transparent');
+      celebCtx.fillStyle = grad;
+      celebCtx.globalAlpha = flashIntensity * 0.4;
+      celebCtx.fillRect(0, -15, W, 30);
+      celebCtx.restore();
+    }
+    }
+    celebCtx.globalAlpha = 1;
+
+    // Periodic bursts from random positions
+    const burstInterval = celebLite ? 40 : 12;
+    if (celebBurstTimer % burstInterval === 0) {
+      const bx = Math.random() * W;
+      const by = Math.random() * H;
+      const n = celebLite ? 1 : 1;
+      burstParticles(bx, by, celebLite ? 5 : 30, 'spark');
+      burstParticles(bx, by, celebLite ? 2 : 8, 'star');
+      burstParticles(bx, by, celebLite ? 3 : 12, 'confetti');
+    }
+
+    // Continuous rain from top
+    const rainInterval = celebLite ? 10 : 3;
+    if (celebBurstTimer % rainInterval === 0) {
+      celebParticles.push(createParticle(
+        Math.random() * W, -10, 'confetti'
+      ));
+    }
+
+    // Update & draw particles
+    for (let i = celebParticles.length - 1; i >= 0; i--) {
+      const p = celebParticles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.vx *= 0.99;
+      p.life -= p.decay;
+      p.rotation += p.rotSpeed;
+
+      if (p.life <= 0) {
+        celebParticles.splice(i, 1);
+        continue;
+      }
+
+      celebCtx.globalAlpha = p.life;
+
+      if (p.type === 'spark') {
+        celebCtx.fillStyle = p.color;
+        celebCtx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        // Glow
+        celebCtx.shadowColor = p.color;
+        celebCtx.shadowBlur = 8;
+        celebCtx.fillRect(p.x - p.size / 4, p.y - p.size / 4, p.size / 2, p.size / 2);
+        celebCtx.shadowBlur = 0;
+      } else if (p.type === 'star') {
+        drawStar(celebCtx, p.x, p.y, p.size, p.color, p.rotation);
+      } else if (p.type === 'confetti') {
+        celebCtx.save();
+        celebCtx.translate(p.x, p.y);
+        celebCtx.rotate(p.rotation);
+        celebCtx.fillStyle = p.color;
+        celebCtx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
+        celebCtx.restore();
+      }
+    }
+
+    celebCtx.globalAlpha = 1;
+
+    // Concentric expanding rings
+    const ringCount = 3;
+    for (let i = 0; i < ringCount; i++) {
+      const phase = (celebFlashFrame * 2 + i * 80) % 300;
+      const radius = phase * 3;
+      const alpha = Math.max(0, 1 - phase / 300) * 0.5;
+      celebCtx.strokeStyle = CELEB_COLORS[(celebFlashFrame + i) % CELEB_COLORS.length];
+      celebCtx.globalAlpha = alpha;
+      celebCtx.lineWidth = 4;
+      celebCtx.beginPath();
+      celebCtx.arc(W / 2, H / 2, radius, 0, Math.PI * 2);
+      celebCtx.stroke();
+    }
+    celebCtx.globalAlpha = 1;
+
+    celebAnimId = requestAnimationFrame(celebLoop);
+  }
+
+  function startCelebration(mode) {
+    celebCanvas.width = 1344;
+    celebCanvas.height = 756;
+    celebParticles = [];
+    celebFlashFrame = 0;
+    celebBurstTimer = 0;
+    celebLite = !!mode;
+
+    if (mode === 'minimal') {
+      // 最小限のパーティクル (0.35〜0.45秒)
+      burstParticles(672, 378, 5, 'spark');
+      burstParticles(672, 378, 2, 'confetti');
+    } else if (mode) {
+      // 控えめなパーティクル (ランク外+速い)
+      burstParticles(672, 378, 15, 'spark');
+      burstParticles(672, 378, 5, 'star');
+      burstParticles(672, 378, 8, 'confetti');
+    } else {
+      // 通常の派手なパーティクル
+      burstParticles(672, 378, 80, 'spark');
+      burstParticles(672, 378, 20, 'star');
+      burstParticles(672, 378, 30, 'confetti');
+      burstParticles(100, 100, 30, 'spark');
+      burstParticles(1244, 100, 30, 'spark');
+      burstParticles(100, 656, 30, 'spark');
+      burstParticles(1244, 656, 30, 'spark');
+    }
+
+    celebAnimId = requestAnimationFrame(celebLoop);
+  }
+
+  function stopCelebration() {
+    if (celebAnimId) {
+      cancelAnimationFrame(celebAnimId);
+      celebAnimId = null;
+    }
+    celebParticles = [];
+    if (celebTimer) {
+      clearTimeout(celebTimer);
+      celebTimer = null;
+    }
+    stopCelebrationSound();
+    const cs = document.getElementById('celebration-screen');
+    if (cs) cs.classList.remove('celeb-freeze', 'celeb-quiet', 'celeb-lite', 'freeze-reveal');
+    const fo = document.getElementById('freeze-overlay');
+    if (fo) fo.classList.remove('active');
+  }
+
+  // --- Ranking (server JSON file with localStorage fallback) ---
+  let cachedRanking = [];
+
+  async function fetchRanking() {
+    try {
+      const res = await fetch('/api/ranking');
+      if (res.ok) {
+        cachedRanking = await res.json();
+        return cachedRanking;
+      }
+    } catch {}
+    // Fallback to localStorage
+    try {
+      const data = localStorage.getItem(RANKING_KEY);
+      cachedRanking = data ? JSON.parse(data) : [];
+    } catch { cachedRanking = []; }
+    return cachedRanking;
+  }
+
+  function loadRanking() {
+    return cachedRanking;
+  }
+
+  async function saveRanking(rankings) {
+    cachedRanking = rankings;
+    localStorage.setItem(RANKING_KEY, JSON.stringify(rankings));
+    try {
+      await fetch('/api/ranking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rankings),
+      });
+    } catch {}
+  }
+
+  function isHighScore(score) {
+    const r = loadRanking();
+    if (r.length < MAX_RANKING) return true;
+    return score < r[MAX_RANKING - 1].score;
+  }
+
+  function addScore(name, score) {
+    const r = loadRanking().slice();
+    r.push({ name, score });
+    r.sort((a, b) => a.score - b.score);
+    saveRanking(r);
+    return r;
+  }
+
+  // Load ranking on startup
+  fetchRanking();
+
+  // --- Screen management ---
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  // --- Helpers ---
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function randFloat(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function getRankText(t) {
+    if (t <= 0.12) return '称号: ★★★★★★ 生まれた時から履いてた ★★★★★★';
+    if (t <= 0.18) return '称号: ★★★★★ パンツと一体化した者 ★★★★★';
+    if (t <= 0.22) return '称号: ★★★★ 光速パンツマスター ★★★★';
+    if (t <= 0.26) return '称号: ★★★★ パンツの錬金術師 ★★★★';
+    if (t <= 0.30) return '称号: ★★★ 履きグセがすごい ★★★';
+    if (t <= 0.34) return '称号: ★★★ パンツアスリート ★★★';
+    if (t <= 0.38) return '称号: ★★ パンツソムリエ見習い ★★';
+    if (t <= 0.42) return '称号: ★ ふつうに履けた ★';
+    if (t <= 0.50) return '称号: もたついた';
+    if (t <= 0.65) return '称号: 片足が引っかかった';
+    if (t <= 0.80) return '称号: 裏表間違えた';
+    if (t <= 1.00) return '称号: パンツどこ置いたっけ';
+    return '称号: 寝落ちした';
+  }
+
+  // --- Video helpers ---
+  function playVideo(videoEl, src) {
+    return new Promise((resolve) => {
+      videoEl.src = src;
+      videoEl.currentTime = 0;
+      videoEl.onended = resolve;
+      videoEl.onerror = resolve;
+      videoEl.play().catch(resolve);
+    });
+  }
+
+  // --- Game flow ---
+  function startGame() {
+    state = 'start';
+    showScreen('start');
+    isEnteringName = false;
+    if (feintTimer) { clearTimeout(feintTimer); feintTimer = null; }
+    stopCelebration();
+  }
+
+  function goToStart2() {
+    sfxClick();
+    state = 'start2';
+    showScreen('start2');
+  }
+
+  function goToOpening() {
+    sfxClick();
+    state = 'opening';
+    showScreen('opening');
+    openingVideo.currentTime = 0;
+    openingVideo.play().catch(() => {});
+    openingVideo.onended = () => {
+      if (state === 'opening') goToFeint();
+    };
+  }
+
+  function goToFeint() {
+    state = 'feint';
+    feintCountTarget = randInt(3, 8);
+    currentFeintCount = 0;
+    playNextFeint();
+  }
+
+  function swapFeintVideos() {
+    // Bring back to front, push front to back
+    const oldFront = feintFront;
+    feintFront = feintBack;
+    feintBack = oldFront;
+    feintFront.style.zIndex = 1;
+    feintBack.style.zIndex = 0;
+    // Stop old video
+    feintBack.pause();
+  }
+
+  function playNextFeint() {
+    if (state !== 'feint') return;
+
+    currentFeintCount++;
+
+    if (currentFeintCount > feintCountTarget) {
+      goToAction();
+      return;
+    }
+
+    const isHakuno = Math.random() < 0.5;
+    const src = isHakuno ? 'movies/hakuno.mp4' : 'movies/hakanaino.mp4';
+    feintText.textContent = isHakuno ? '履くの？' : '履かないの？';
+
+    sfxFeint();
+    showScreen('video');
+
+    // Preload into back buffer, swap when ready
+    feintBack.src = src;
+    feintBack.currentTime = 0;
+    feintBack.oncanplay = () => {
+      feintBack.oncanplay = null;
+      if (state !== 'feint') return;
+      swapFeintVideos();
+      feintFront.play().catch(() => {});
+    };
+    feintBack.load();
+
+    // Schedule next feint
+    const switchDelay = randFloat(600, 1200);
+    feintTimer = setTimeout(() => {
+      if (state === 'feint') playNextFeint();
+    }, switchDelay);
+  }
+
+  function goToAction() {
+    state = 'action';
+    sfxAction();
+    feintFront.pause();
+    feintBack.pause();
+
+    // Show video screen with haiteru.mp4
+    showScreen('video');
+    feintFront.src = 'movies/haiteru.mp4';
+    feintFront.currentTime = 0;
+    feintFront.style.zIndex = 1;
+    feintFront.play().catch(() => {});
+
+    // Overlay action screen on top of video (both visible)
+    setTimeout(() => {
+      if (state !== 'action') return;
+      screens.action.classList.add('active'); // add without removing video
+      startTime = performance.now();
+    }, 50);
+  }
+
+  let celebIsRanked = false;
+
+  function handleAction() {
+    reactionTime = (performance.now() - startTime) / 1000;
+    feintFront.pause();
+    feintBack.pause();
+    state = 'celebration';
+
+    const isFast = reactionTime <= 0.34;
+    const isMid = !isFast && reactionTime <= 0.42;
+    celebIsRanked = isHighScore(reactionTime);
+
+    // Calculate ranking position
+    const currentRanks = loadRanking();
+    let rankPos = currentRanks.filter(e => e.score < reactionTime).length + 1;
+
+    // Reset animations by removing and re-adding elements to force restart
+    const overlay = document.querySelector('.celeb-overlay');
+    const animEls = overlay.querySelectorAll('[class*="celeb-"]');
+    animEls.forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight; // force reflow
+      el.style.animation = '';
+    });
+
+    // Set celebration text
+    const isSlow = !isFast && !isMid;
+    celebBigText.textContent = celebIsRanked ? `${rankPos}位！` : isSlow ? `${rankPos}位...` : `${rankPos}位`;
+    celebTimeText.textContent = `${reactionTime.toFixed(3)} 秒`;
+    celebRankText.textContent = getRankText(reactionTime);
+
+    // Set prompt text based on ranking
+    const promptEl = document.getElementById('celeb-prompt');
+    promptEl.textContent = celebIsRanked
+      ? '- スペースキーで名前登録 -'
+      : '- スペースキーで続ける -';
+
+    const celebScreen = document.getElementById('celebration-screen');
+    celebScreen.classList.remove('celeb-quiet', 'celeb-lite', 'celeb-freeze', 'freeze-reveal');
+    const freezeOv = document.getElementById('freeze-overlay');
+    freezeOv.classList.remove('active');
+
+    showScreen('celebration');
+    celebReady = false;
+
+    const isGodlike = reactionTime <= 0.22;
+
+    if (celebIsRanked) {
+      // === ランクイン: 派手演出 ===
+      if (isGodlike) {
+        // フリーズ演出
+        celebScreen.classList.add('celeb-freeze');
+        freezeOv.classList.add('active');
+
+        const black = freezeOv.querySelector('.freeze-black');
+        const light = freezeOv.querySelector('.freeze-light');
+        const strobe = freezeOv.querySelector('.freeze-strobe');
+
+        black.style.transition = 'opacity 0.15s';
+        black.style.opacity = '1';
+        light.style.opacity = '0';
+        strobe.style.opacity = '0';
+
+        freezeAudio.currentTime = 0;
+        freezeAudio.play().catch(() => {});
+
+        setTimeout(() => {
+          playBeep(50, 0.8, 'sawtooth');
+          playBeep(55, 0.8, 'sawtooth');
+        }, 400);
+
+        setTimeout(() => {
+          light.style.transition = 'width 0.3s, height 0.3s, opacity 0.3s';
+          light.style.width = '60px';
+          light.style.height = '60px';
+          light.style.opacity = '0.6';
+          playBeep(200, 0.2, 'sine');
+        }, 1200);
+
+        setTimeout(() => {
+          playBeep(80, 0.6, 'sawtooth');
+          playBeep(100, 0.5, 'sawtooth');
+          playBeep(1500, 0.3, 'square');
+          playBeep(2000, 0.25, 'square');
+          light.style.transition = 'width 0.25s ease-out, height 0.25s ease-out, opacity 0.15s';
+          light.style.width = '3000px';
+          light.style.height = '3000px';
+          light.style.opacity = '1';
+        }, 1600);
+
+        setTimeout(() => {
+          let strobeCount = 0;
+          const strobeInterval = setInterval(() => {
+            strobe.style.opacity = strobe.style.opacity === '0' ? '0.9' : '0';
+            strobeCount++;
+            if (strobeCount >= 6) {
+              clearInterval(strobeInterval);
+              strobe.style.opacity = '0';
+            }
+          }, 60);
+          playBeep(2500, 0.15, 'square');
+          playBeep(3000, 0.15, 'square');
+        }, 1900);
+
+        setTimeout(() => {
+          black.style.transition = 'opacity 0.5s';
+          black.style.opacity = '0';
+          light.style.transition = 'opacity 0.5s';
+          light.style.opacity = '0';
+          freezeOv.classList.remove('active');
+          celebScreen.classList.add('freeze-reveal');
+          sfxCelebration();
+          startCelebration();
+          burstParticles(672, 378, 120, 'spark');
+          burstParticles(672, 378, 40, 'star');
+          burstParticles(672, 378, 50, 'confetti');
+          // フリーズ演出後4秒で操作受付
+          celebTimer = setTimeout(() => { celebReady = true; }, 4000);
+        }, 2300);
+
+      } else {
+        // ランクイン通常演出
+        sfxCelebration();
+        startCelebration();
+        celebTimer = setTimeout(() => { celebReady = true; }, 4000);
+      }
+    } else if (isFast) {
+      // === ランク外だけど速い
+      celebScreen.classList.add('celeb-lite');
+      startCelebration(true);
+      playBeep(523, 0.2, 'triangle');
+      setTimeout(() => playBeep(659, 0.2, 'triangle'), 150);
+      setTimeout(() => playBeep(784, 0.2, 'triangle'), 300);
+      celebTimer = setTimeout(() => { celebReady = true; }, 3000);
+    } else if (isMid) {
+      // === 0.35〜0.45秒
+      celebScreen.classList.add('celeb-lite');
+      startCelebration('minimal');
+      sfxClick();
+      celebTimer = setTimeout(() => { celebReady = true; }, 2500);
+    } else {
+      // === 遅い
+      celebScreen.classList.add('celeb-quiet');
+      sfxClick();
+      celebTimer = setTimeout(() => { celebReady = true; }, 2000);
+    }
+  }
+
+  function showResult() {
+    const currentRanks = loadRanking();
+    const myRank = currentRanks.filter(e => e.score < reactionTime).length + 1;
+    yourTime.textContent = `${myRank}位: ${reactionTime.toFixed(3)} 秒`;
+    rankLabel.textContent = getRankText(reactionTime);
+
+    if (celebIsRanked) {
+      sfxHighScore();
+      nameArea.classList.add('active');
+      rankingArea.classList.remove('active');
+      nameInput.value = '';
+      isEnteringName = true;
+      showScreen('result');
+      setTimeout(() => nameInput.focus(), 100);
+    } else {
+      // Top10外は匿名で自動保存
+      addScore('-', reactionTime);
+      nameArea.classList.remove('active');
+      isEnteringName = false;
+      displayRanking(loadRanking());
+      showScreen('result');
+    }
+  }
+
+  function submitName() {
+    sfxClick();
+    const name = nameInput.value.trim() || 'ななし';
+    const rankings = addScore(name, reactionTime);
+    nameArea.classList.remove('active');
+    isEnteringName = false;
+    displayRanking(rankings);
+  }
+
+  function displayRanking(rankings) {
+    rankingArea.classList.add('active');
+    rankingList.innerHTML = '';
+    const top10 = rankings.slice(0, MAX_RANKING);
+    top10.forEach((entry, i) => {
+      const li = document.createElement('li');
+      const medal = `${i+1}位`;
+      li.textContent = `${medal}  ${entry.name.padEnd(10, '.')}  ${entry.score.toFixed(3)}秒`;
+      li.classList.add('pixel-text');
+      if (Math.abs(entry.score - reactionTime) < 0.0001) {
+        li.classList.add('highlight');
+      }
+      rankingList.appendChild(li);
+    });
+  }
+
+  function goToPenalty() {
+    state = 'penalty';
+    sfxPenalty();
+    feintFront.pause();
+    feintBack.pause();
+    if (feintTimer) { clearTimeout(feintTimer); feintTimer = null; }
+    showScreen('penalty');
+  }
+
+  // --- Event listeners ---
+  container.addEventListener('click', (e) => {
+    if (isEnteringName) {
+      if (nameArea.contains(e.target)) return;
+      return;
+    }
+
+    switch (state) {
+      case 'start':  goToStart2(); break;
+      case 'start2': goToOpening(); break;
+      case 'opening':
+        openingVideo.pause();
+        goToFeint();
+        break;
+      case 'feint':  goToPenalty(); break;
+      case 'action': handleAction(); break;
+      case 'celebration':
+        if (!celebReady) break;
+        stopCelebration();
+        state = 'result';
+        showResult();
+        break;
+      case 'result': startGame(); break;
+      case 'penalty': startGame(); break;
+    }
+  });
+
+  actionBtn.addEventListener('click', (e) => {
+    if (state === 'action') {
+      e.stopPropagation();
+      handleAction();
+    }
+  });
+
+  nameSubmit.addEventListener('click', (e) => {
+    e.stopPropagation();
+    submitName();
+  });
+
+  nameInput.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') submitName();
+  });
+
+  nameInput.addEventListener('click', (e) => e.stopPropagation());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === ' ' && !isEnteringName) {
+      e.preventDefault();
+      container.click();
+    }
+  });
+
+  // --- Responsive scaling ---
+  function resize() {
+    const scaleX = window.innerWidth / 1344;
+    const scaleY = window.innerHeight / 756;
+    const scale = Math.min(scaleX, scaleY, 1);
+    container.style.transform = `scale(${scale})`;
+    container.style.transformOrigin = 'center center';
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // --- Init ---
+  startGame();
+})();
+</script>
+
+</body>
+</html>

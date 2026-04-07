@@ -259,22 +259,31 @@ Game.drawFrontCabinet = function(cabinet, theme, time) {
     }
   }
 
-  // 黄緑キャビネット（maint）: たまにちらつくノイズ
+  // おぱんちゅ速履き画面
   if (cabinet.id === "maint") {
-    var nx = cx + 18;
-    var ny = cy + 36;
-    var nw = cw - 36;
-    var nh = 88;
-    // 弱めの砂嵐ノイズ
-    var seed = Math.floor(time * 0.05);
-    for (var niy = ny; niy < ny + nh; niy += 6) {
-      for (var nix = nx; nix < nx + nw; nix += 6) {
-        var hash = ((nix * 131 + niy * 317 + seed * 773) % 997);
-        if (hash < 150) {
-          var bright = (hash % 3 === 0) ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
-          rect(nix, niy, 6, 6, bright);
-        }
+    var sx = cx + 18;
+    var sy = cy + 36;
+    var sw = cw - 36;
+    var sh = 88;
+    var oimg = Game.opantyuThumbnail;
+    if (oimg && oimg.complete && oimg.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(sx, sy, sw, sh);
+      ctx.clip();
+      var scale = Math.max(sw / oimg.naturalWidth, sh / oimg.naturalHeight);
+      var iw = oimg.naturalWidth * scale;
+      var ih = oimg.naturalHeight * scale;
+      ctx.drawImage(oimg, sx + (sw - iw) / 2, sy + (sh - ih) / 2, iw, ih);
+      // チカチカエフェクト
+      if (Math.sin(time * 0.013 + 1) > 0.7) {
+        rect(sx, sy, sw, sh, "rgba(200,255,200,0.1)");
       }
+      if (Math.sin(time * 0.008 + 2) > 0.85) {
+        var flickY = sy + (Math.floor(time * 0.15) % sh);
+        rect(sx, flickY, sw, 2, "rgba(255,255,255,0.18)");
+      }
+      ctx.restore();
     }
   }
 

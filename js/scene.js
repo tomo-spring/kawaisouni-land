@@ -104,6 +104,9 @@ Game.runbaThumbnail.src = "assets/npochamurunba-thumb.png";
 Game.hotelThumbnail = new Image();
 Game.hotelThumbnail.src = "assets/hotel-dangerous-thumb.png";
 
+Game.opantyuThumbnail = new Image();
+Game.opantyuThumbnail.src = "assets/opantyu-thumb.png";
+
 Game.OFFSET_X = 160;
 Game.OFFSET_Y = -80;
 
@@ -366,30 +369,15 @@ Game.drawScene = function(time) {
     var boxW = 1000;
     Game.roundRect(boxX, boxY, boxW, boxH, 12, "rgba(255,255,255,0.55)", "#ffbfd1", 4);
 
-    var titleX = boxX + 20;
     var titleY = boxY + titleSize + (boxH - titleSize) / 2 - 4;
 
-    Game.text("かわいそうに！ランド", titleX, titleY, {
+    Game.text("可哀想に！ランド", boxX + boxW / 2, titleY, {
       size: titleSize,
       font: popFont(titleSize),
       color: "#ffd700",
       shadow: "#cc8800",
-      shadowOffset: 2
-    });
-
-    var subX = titleX + 500;
-    var subTopY = boxY + (boxH / 2) - subSize - 6;
-
-    Game.text("1年前にできた老舗ゲームセンター。", subX, subTopY + subSize, {
-      size: subSize,
-      font: popFont(subSize),
-      color: "#5b4636"
-    });
-
-    Game.text("夜になるとオシャレな店員さんが出てきます。", subX, subTopY + subSize * 2 + 8, {
-      size: subSize,
-      font: popFont(subSize),
-      color: "#5b4636"
+      shadowOffset: 2,
+      align: "center"
     });
   }
 

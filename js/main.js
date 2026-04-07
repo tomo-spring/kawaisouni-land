@@ -34,7 +34,7 @@
 
   canvas.addEventListener("mousemove", function(event) {
     Game.hoveredCabinet = getCabinetAt(event.clientX, event.clientY);
-    var isClickable = Game.hoveredCabinet && (Game.hoveredCabinet.id === "sad-run" || Game.hoveredCabinet.id === "train");
+    var isClickable = Game.hoveredCabinet && (Game.hoveredCabinet.id === "sad-run" || Game.hoveredCabinet.id === "train" || Game.hoveredCabinet.id === "maint");
     canvas.style.cursor = isClickable ? "pointer" : "default";
 
     // マウスのシーン座標を記録
@@ -81,6 +81,13 @@
       thumb2: "assets/npochamurunba-thumb-2.png",
       desc: "んぽちゃむったら旅行なのにまだ部屋にいるみたい！\nルンバで引きずり出してきみまろの元へ連れて行こう！\nマカロンに近づくと食べちゃうから気をつけて...！",
       url: "npochamu-runba/index.html"
+    },
+    "maint": {
+      title: "おぱんちゅ速履き.exe",
+      subtitle: "～おぱんちゅを誰よりも速く履こう～",
+      thumb: "assets/opantyu-thumb.png",
+      desc: "おぱんちゅうさぎがパンツを速く履くゲーム！\nタイミングよくボタンを押して最速を目指そう！\nランキングに載れるかな...！？",
+      url: "opantyu/index.html"
     }
   };
 
