@@ -22,7 +22,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #10131e;
+        background: #dff5ff;
         font-family:
           Impact, Haettenschweiler, "Arial Black", "Hiragino Kaku Gothic ProN",
           "Yu Gothic", sans-serif;
@@ -347,42 +347,6 @@
         outline: 3px solid #00ff00;
         outline-offset: 2px;
         box-shadow: 0 0 12px #00ff00;
-      }
-      .kb-selectable.kb-selected::before {
-        content: "SELECT";
-        position: absolute;
-        left: 50%;
-        top: -36px;
-        transform: translateX(-50%);
-        font-family: "Courier New", monospace;
-        font-size: 18px;
-        font-weight: 900;
-        color: #ff0000;
-        -webkit-text-stroke: 3px #00cc00;
-        paint-order: stroke fill;
-        text-shadow: 0 0 8px #00ff00;
-        animation: select-bounce 0.8s ease-in-out infinite;
-        pointer-events: none;
-        white-space: nowrap;
-      }
-      .kb-selectable.kb-selected::after {
-        content: "";
-        position: absolute;
-        left: 50%;
-        top: -14px;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 14px solid transparent;
-        border-right: 14px solid transparent;
-        border-top: 10px solid #00dd00;
-        filter: drop-shadow(0 0 6px #00ff00);
-        animation: select-bounce 0.8s ease-in-out infinite;
-        pointer-events: none;
-      }
-      @keyframes select-bounce {
-        0%, 100% { transform: translateX(-50%) translateY(0); }
-        50% { transform: translateX(-50%) translateY(-5px); }
       }
     </style>
   </head>
@@ -1590,6 +1554,10 @@ function drawBackground(ctx) {
     const dw = viewport.width;
     const dh = imgH * scale;
     const dy = viewport.height - dh;
+    // 画像より上の隙間を画像の最上部ピクセルで埋める
+    if (dy > 0) {
+      ctx.drawImage(backgroundImage, 0, 0, imgW, 1, 0, 0, dw, dy);
+    }
     ctx.drawImage(backgroundImage, 0, dy, dw, dh);
   }
 }
