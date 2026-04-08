@@ -237,6 +237,11 @@
       transform: translateY(2px);
       box-shadow: 1px 1px 0 #000;
     }
+    .home-btn.kb-selected {
+      outline: 3px solid #00ff00;
+      outline-offset: 2px;
+      box-shadow: 0 0 12px #00ff00;
+    }
   </style>
 </head>
 
@@ -1781,12 +1786,37 @@ function createGame(opts) {
   renderer.resize();
 
   var homeBtnEl = document.querySelector('.home-btn');
+  var homeBtnSelected = false;
+
+  function updateHomeBtnHighlight() {
+    homeBtnEl.classList.toggle('kb-selected', homeBtnSelected);
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (state.gameState !== 'title') return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      homeBtnSelected = true;
+      updateHomeBtnHighlight();
+    } else if (e.key === 'Enter' && homeBtnSelected) {
+      e.preventDefault();
+      window.location.href = '../';
+    }
+  });
+
+  canvas.addEventListener('pointerdown', function() {
+    homeBtnSelected = false;
+    updateHomeBtnHighlight();
+  });
+
   function loop(timestamp) {
     var dt = Math.min((timestamp - state.lastTime) / 1000, 0.05);
     state.lastTime = timestamp;
     game.update(dt);
     renderer.draw(timestamp);
-    homeBtnEl.classList.toggle('visible', state.gameState === 'title');
+    var isTitle = state.gameState === 'title';
+    homeBtnEl.classList.toggle('visible', isTitle);
+    if (!isTitle) { homeBtnSelected = false; updateHomeBtnHighlight(); }
     requestAnimationFrame(loop);
   }
 

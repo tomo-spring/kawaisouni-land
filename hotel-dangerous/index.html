@@ -303,6 +303,23 @@
       .result-home:hover {
         color: #ffec27;
       }
+      .result-home-text {
+        display: none;
+        font-family: 'Courier New', monospace;
+        font-size: 18px;
+        font-weight: 900;
+        color: #5f574f;
+        text-shadow: 1px 1px 0 #000;
+        margin-top: 16px;
+        animation: rank-blink-text 1.2s infinite;
+        cursor: pointer;
+      }
+      .result-home-text.visible {
+        display: block;
+      }
+      .result-home-text:hover {
+        color: #ffec27;
+      }
 
       .home-btn {
         position: fixed;
@@ -401,6 +418,7 @@
           <ol id="ranking-list-ol"></ol>
         </div>
 
+        <div class="result-home-text" id="result-home-text">SPACE / クリックでホームに戻る</div>
       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js"></script>
@@ -562,12 +580,14 @@ function displayRank(rankings) {
     }
     rankListOl.appendChild(li);
   });
+  document.getElementById('result-home-text').classList.add('visible');
 }
 
 function hideRanking() {
   resultScreen.classList.remove('active');
   rankNameArea.classList.remove('active');
   rankListArea.classList.remove('active');
+  document.getElementById('result-home-text').classList.remove('visible');
   rankEntering = false;
 }
 
@@ -619,6 +639,10 @@ document.addEventListener('keydown', (e) => {
     }
   }
 }, true);
+
+document.getElementById('result-home-text').addEventListener('click', () => {
+  window.location.href = '../';
+});
 
 loadRank();
 
