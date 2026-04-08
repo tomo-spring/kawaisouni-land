@@ -42,19 +42,12 @@ body::after {
 
 #game-container {
   position: relative;
-  width: 1344px;
-  height: 756px;
-  max-width: 100vw;
-  max-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   background: #0f0f23;
   overflow: hidden;
   cursor: pointer;
   user-select: none;
-  border: 6px solid #444;
-  box-shadow:
-    0 0 0 3px #222,
-    0 0 40px rgba(0,255,100,0.1),
-    inset 0 0 80px rgba(0,0,0,0.5);
 }
 
 #game-container video {
@@ -1697,16 +1690,6 @@ body::after {
 
   document.querySelector('.home-btn').addEventListener('click', (e) => e.stopPropagation());
 
-  // --- Responsive scaling ---
-  function resize() {
-    const scaleX = window.innerWidth / 1344;
-    const scaleY = window.innerHeight / 756;
-    const scale = Math.min(scaleX, scaleY, 1);
-    container.style.transform = `scale(${scale})`;
-    container.style.transformOrigin = 'center center';
-  }
-  window.addEventListener('resize', resize);
-  resize();
 
   // --- Init ---
   startGame();

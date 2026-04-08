@@ -319,16 +319,15 @@
         cursor: pointer;
         text-decoration: none;
         display: none;
-        align-items: center;
-        gap: 6px;
         text-shadow: 1px 1px 0 #000;
         box-shadow: 3px 3px 0 #000;
         pointer-events: auto;
         transition: color 0.2s, border-color 0.2s;
         border-radius: 0;
+        width: fit-content;
       }
       .home-btn.visible {
-        display: flex;
+        display: block;
       }
       .home-btn:hover {
         color: #ffec27;
@@ -338,10 +337,57 @@
         transform: translateY(2px);
         box-shadow: 1px 1px 0 #000;
       }
+
+      /* キーボード選択カーソル */
+      .kb-selectable {
+        position: relative;
+        overflow: visible;
+      }
+      .kb-selectable.kb-selected {
+        outline: 3px solid #00ff00;
+        outline-offset: 2px;
+        box-shadow: 0 0 12px #00ff00;
+      }
+      .kb-selectable.kb-selected::before {
+        content: "SELECT";
+        position: absolute;
+        left: 50%;
+        top: -36px;
+        transform: translateX(-50%);
+        font-family: "Courier New", monospace;
+        font-size: 18px;
+        font-weight: 900;
+        color: #ff0000;
+        -webkit-text-stroke: 3px #00cc00;
+        paint-order: stroke fill;
+        text-shadow: 0 0 8px #00ff00;
+        animation: select-bounce 0.8s ease-in-out infinite;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .kb-selectable.kb-selected::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: -14px;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 14px solid transparent;
+        border-right: 14px solid transparent;
+        border-top: 10px solid #00dd00;
+        filter: drop-shadow(0 0 6px #00ff00);
+        animation: select-bounce 0.8s ease-in-out infinite;
+        pointer-events: none;
+      }
+      @keyframes select-bounce {
+        0%, 100% { transform: translateX(-50%) translateY(0); }
+        50% { transform: translateX(-50%) translateY(-5px); }
+      }
     </style>
   </head>
   <body>
-    <a href="../" class="home-btn">← ホームへ</a>
+    <a href="../" class="home-btn kb-selectable">← ホームへ</a>
     <canvas id="game"></canvas>
     <div id="end-img-overlay" style="pointer-events:none;opacity:0;transition:opacity 4s ease;">
       <div style="position:fixed;right:16vw;bottom:8vh;display:flex;flex-direction:column;align-items:center;z-index:9;">
@@ -360,7 +406,7 @@
     </div>
     <div class="hud">
       <p class="timer" id="timer">00:00.000</p>
-      <button class="surrender-btn" id="surrender-btn">降参</button>
+      <button class="surrender-btn kb-selectable" id="surrender-btn">降参</button>
       <div class="controls" aria-hidden="true">
         <p><kbd>Q</kbd> 後ろの足を前へ</p>
         <p><kbd>W</kbd> 後ろの足を後ろへ</p>
@@ -2219,6 +2265,68 @@ window.addEventListener("resize", resize);
 resize();
 resetGame(canvas);
 requestAnimationFrame((ts) => loop(ts, ctx, canvas, timerEl));
+
+// === キーボードボタン選択システム ===
+(function() {
+  const homeBtn = document.querySelector('.home-btn');
+  const surrenderBtn = document.getElementById('surrender-btn');
+  let kbBtnIndex = 0;
+  let kbActive = false;
+
+  function getVisibleButtons() {
+    const btns = [];
+    if (homeBtn && homeBtn.classList.contains('visible')) btns.push(homeBtn);
+    if (surrenderBtn && surrenderBtn.offsetParent !== null &&
+        (state.mode === 'ready' || state.mode === 'playing')) btns.push(surrenderBtn);
+    return btns;
+  }
+
+  function updateKbHighlight() {
+    document.querySelectorAll('.kb-selectable').forEach(el => el.classList.remove('kb-selected'));
+    if (!kbActive) return;
+    const btns = getVisibleButtons();
+    if (btns.length > 0 && kbBtnIndex < btns.length) {
+      btns[kbBtnIndex].classList.add('kb-selected');
+    }
+  }
+
+  window.addEventListener('keydown', (e) => {
+    // ランキング入力中やゲーム操作キーは無視
+    if (rankEntering) return;
+    if (state.mode === 'playing' && !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','Escape'].includes(e.key)) return;
+
+    const btns = getVisibleButtons();
+    if (btns.length === 0) return;
+
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!kbActive) { kbActive = true; kbBtnIndex = 0; }
+      else { kbBtnIndex = Math.max(0, kbBtnIndex - 1); }
+      updateKbHighlight();
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!kbActive) { kbActive = true; kbBtnIndex = 0; }
+      else { kbBtnIndex = Math.min(btns.length - 1, kbBtnIndex + 1); }
+      updateKbHighlight();
+    } else if (e.key === 'Enter' && kbActive) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (btns[kbBtnIndex]) btns[kbBtnIndex].click();
+    }
+  });
+
+  // プレイ開始やモード変更時にリセット
+  const origResetGame = window.resetGame;
+  if (origResetGame) {
+    // resetGame後にハイライトリセット
+  }
+
+  // マウス操作時はキーボード選択を解除
+  window.addEventListener('mousedown', () => {
+    kbActive = false;
+    updateKbHighlight();
+  });
+})();
 
     </script>
   </body>
